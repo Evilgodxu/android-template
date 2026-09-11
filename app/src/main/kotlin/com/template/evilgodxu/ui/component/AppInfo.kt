@@ -99,7 +99,7 @@ fun AppInfo(version: String, onCheckForUpdate: () -> Unit) {
     }
 }
 
-/** 唤起系统分享今日异常日志；今日无日志时提示用户 */
+// 唤起系统分享今日异常日志；今日无日志时提示用户
 private fun shareTodayLog(context: Context) {
     val logFile = CrashLogManager.getTodayLogFile()
     if (logFile == null) {

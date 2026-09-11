@@ -10,8 +10,8 @@ import com.template.evilgodxu.data.repository.DataStoreSettingsRepository
 import com.template.evilgodxu.data.repository.SettingsRepository
 import com.template.evilgodxu.localization.LocalizationManager
 
-// 手动 DI 容器：Application 启动时构造并持有全部依赖，取代框架注入。
-// 数据源经构造注入仓库，便于单元测试替换。
+// 手动 DI 容器：Application 启动时构造并持有全部依赖
+// 数据源经构造注入仓库，便于单元测试替换
 class AppContainer(context: Context) {
 
     private val appContext = context.applicationContext

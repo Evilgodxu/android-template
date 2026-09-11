@@ -23,10 +23,10 @@ object CrashLogManager : Thread.UncaughtExceptionHandler {
 
     private const val TAG = "CrashLogManager"
 
-    /** 日志目录名（应用专属外部目录下） */
+    // 日志目录名（应用专属外部目录下）
     private const val LOG_DIR_NAME = "logs"
 
-    /** 日志文件名前缀 */
+    // 日志文件名前缀
     private const val LOG_FILE_PREFIX = "Template_"
 
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -126,7 +126,7 @@ object CrashLogManager : Thread.UncaughtExceptionHandler {
         }
     }
 
-    /** 仅保留今日日志，清理全部历史日志文件 */
+    // 仅保留今日日志，清理全部历史日志文件
     private fun cleanOldLogs() {
         val dir = logDir ?: return
         val todayFile = "$LOG_FILE_PREFIX${LocalDate.now().format(dateFormat)}.log"

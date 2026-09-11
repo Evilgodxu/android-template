@@ -29,8 +29,7 @@ import com.template.evilgodxu.ui.component.Language
 import com.template.evilgodxu.update.AppUpdateChecker
 import kotlinx.coroutines.flow.StateFlow
 
-// 页面级组装单元：设置列表 + 弹窗状态 + 更新检查结果反馈，供各尺寸组装器复用。
-// 承载页面状态与副作用，保留在页面包内（content/）而非 ui/component
+// 页面级组装单元：设置列表 + 弹窗状态 + 更新检查结果反馈，供各尺寸组装器复用
 @Composable
 fun SettingsContent(
     uiState: AppUiState,

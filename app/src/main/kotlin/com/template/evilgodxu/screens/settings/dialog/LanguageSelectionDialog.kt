@@ -6,7 +6,7 @@ import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
 import com.template.evilgodxu.ui.dialog.SingleChoiceDialog
 
-/** 页面专用弹窗：复用 [SingleChoiceDialog]，仅提供语言选项与本地化文案；收敛于页面包内 dialog/ */
+/** 页面专用弹窗：复用 [SingleChoiceDialog]，仅提供语言选项与本地化文案 */
 @Composable
 fun LanguageSelectionDialog(
     currentLanguage: AppLanguage,
