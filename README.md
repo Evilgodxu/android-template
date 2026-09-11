@@ -22,7 +22,7 @@
 ## Features
 
 - **Single-Activity architecture** with Jetpack Compose + Material 3, edge-to-edge rendering, and per-orientation system-bar visibility
-- **MVVM with unidirectional data flow (UDF)** — app-wide state (theme / language / version) is aggregated in an Activity-scoped `TemplateActivityViewModel` and consumed across the tree via a `CompositionLocal`; each screen adds its own immutable `UiState` exposed as a `StateFlow`. Events flow up, state flows down
+- **MVVM with unidirectional data flow (UDF)** — app-wide state (theme / language / version) is aggregated in an Activity-scoped `MainViewModel` and consumed across the tree via a `CompositionLocal`; each screen adds its own immutable `UiState` exposed as a `StateFlow`. Events flow up, state flows down
 - **Atomic UI decomposition + adaptive assemblies** — the screen entry dispatches by window size class to a `CompactAssembly` / `ExpandedAssembly`, which composes self-contained, single-responsibility components from `component/`; components depend strictly downward and never couple back to the assembly
 - **Navigation3** with typed routes and an explicit back stack (double-back-to-exit on the root)
 - **Manual DI** — the `Application` owns a single `AppContainer`; the Activity and ViewModels pull dependencies from it
@@ -82,11 +82,11 @@
 │       │   │   ├── icons/               #   Vector icons
 │       │   │   └── dialog/              #   SingleChoiceDialog
 │       │   ├── update/                  # Latest-release check (GitHub API)
+│       │   ├── App.kt                   # Application entry
 │       │   ├── AppContainer.kt          # Manual DI container (app-level)
-│       │   ├── TemplateActivity.kt
-│       │   ├── TemplateActivityViewModel.kt   # Activity-scoped global UI state holder
-│       │   ├── TemplateAppUiState.kt          # App-level UI state
-│       │   └── TemplateApplication.kt
+│       │   ├── AppUiState.kt            # App-level UI state
+│       │   ├── MainActivity.kt          # Single Activity
+│       │   └── MainViewModel.kt         # Activity-scoped global UI state holder
 │       └── res/                         # Resources (values / values-en)
 ├── gradle/
 │   ├── libs.versions.toml               # Version catalog (dependencies)
@@ -102,7 +102,7 @@
 
 The app follows **MVVM with unidirectional data flow (UDF)**, forming a closed loop where state flows down and events flow up. State is split across two tiers:
 
-- **App-level global state** — `TemplateActivityViewModel` (Activity-scoped) aggregates app-wide UI state (`themeMode`, `language`, `version`) into the immutable `TemplateAppUiState`, exposed as a `StateFlow` and provided to the UI tree via the `LocalTemplateActivityViewModel` `CompositionLocal`. Theme, localization and screen UIs all consume this single source; the UI layer never touches the data source directly.
+- **App-level global state** — `MainViewModel` (Activity-scoped) aggregates app-wide UI state (`themeMode`, `language`, `version`) into the immutable `AppUiState`, exposed as a `StateFlow` and provided to the UI tree via the `LocalMainViewModel` `CompositionLocal`. Theme, localization and screen UIs all consume this single source; the UI layer never touches the data source directly.
 - **Screen-level local state** — each screen's `{ScreenName}ViewModel` owns a `MutableStateFlow<{ScreenName}UiState>` as its single source of UI truth, exposed as an immutable `StateFlow` (e.g. `HomeViewModel` + `HomeUiState`).
 - **Model** — the repository layer. `SettingsRepository` abstracts `DataStore Preferences`, which is the single source of truth for persisted settings; it is manually constructed and injected via `AppContainer` (swap-friendly for tests). User intents are received as plain methods (`setThemeMode`, `setLanguage`) and written back through the repository.
 
@@ -116,7 +116,7 @@ Code is organized with a **modular pattern driven by window size classes**, mirr
 - `{ScreenName}CompactAssembly.kt` / `{ScreenName}ExpandedAssembly.kt` — own screen-level layout scaffolding (Scaffold, top bar, scroll container) and **assemble reusable atomic components**. The displayed form is decided jointly by window size class and screen rotation state; `if`-based layout branching is avoided.
 - `ui/component/` — atomic, single-responsibility UI units (`Welcome`, `About`, `Appearance`, `AppInfo`, `SectionCard`, `AppTopBar`, …) named by semantics rather than generic suffixes. Dependencies point strictly downward: an assembly may compose components, but a component never composes back into an assembly, so the tree stays uncoupled. Atomic components live together in top-level `ui/component/`; screen-level composition units and screen-specific dialogs stay in the feature package.
 
-DI is manual: `TemplateApplication` builds a fully-populated `AppContainer` (DataStore, repository, localization manager, version) at startup, and the Activity / ViewModels pull dependencies from it (ViewModels get constructor args via a `viewModelFactory`). No framework or reflection.
+DI is manual: `App` builds a fully-populated `AppContainer` (DataStore, repository, localization manager, version) at startup, and the Activity / ViewModels pull dependencies from it (ViewModels get constructor args via a `viewModelFactory`). No framework or reflection.
 
 Shared cross-feature code is hoisted to the top level (`data/`, `ui/`, `theme/`, `localization/`, `windowSize/`, `log/`, `update/`); code used by a single feature stays inside that feature module.
 

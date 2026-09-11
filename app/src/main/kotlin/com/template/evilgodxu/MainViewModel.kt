@@ -18,13 +18,13 @@ data class UpdateCheckOutcome(val latest: String?)
 
 // 应用级（Activity 作用域）UI 状态持有者：以 DataStore 为单一事实源，聚合主题、语言与版本，
 // 供全局主题、本地化与各页面 UI 共同消费，UI 层不直连数据源。
-class TemplateActivityViewModel(
+class MainViewModel(
     private val settingsRepository: SettingsRepository,
     appVersion: String,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TemplateAppUiState(version = appVersion))
-    val uiState: StateFlow<TemplateAppUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AppUiState(version = appVersion))
+    val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
     private val _updateCheck = MutableStateFlow<UpdateCheckOutcome?>(null)
     val updateCheck: StateFlow<UpdateCheckOutcome?> = _updateCheck.asStateFlow()
@@ -61,6 +61,6 @@ class TemplateActivityViewModel(
 }
 
 // 供界面树消费的 CompositionLocal，由宿主 Activity 提供
-val LocalTemplateActivityViewModel = staticCompositionLocalOf<TemplateActivityViewModel> {
-    error("TemplateActivityViewModel is not provided")
+val LocalMainViewModel = staticCompositionLocalOf<MainViewModel> {
+    error("MainViewModel is not provided")
 }

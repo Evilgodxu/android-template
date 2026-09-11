@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.template.evilgodxu.TemplateAppUiState
+import com.template.evilgodxu.AppUiState
 import com.template.evilgodxu.UpdateCheckOutcome
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 // 设置页宽屏组装器：内容限宽居中，避免宽屏下过度拉伸
 @Composable
 fun SettingsExpandedAssembly(
-    uiState: TemplateAppUiState,
+    uiState: AppUiState,
     updateCheck: StateFlow<UpdateCheckOutcome?>,
     onBack: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,

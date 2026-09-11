@@ -3,7 +3,7 @@ package com.template.evilgodxu
 import android.app.Application
 import com.template.evilgodxu.log.CrashLogManager
 
-class TemplateApplication : Application() {
+class App : Application() {
 
     // 手动 DI 容器：Application 级单例，宿主 Activity 启动时取用
     lateinit var container: AppContainer

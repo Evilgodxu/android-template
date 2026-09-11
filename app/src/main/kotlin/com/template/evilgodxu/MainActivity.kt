@@ -27,19 +27,19 @@ import com.template.evilgodxu.navigation.AppNavHost
 import com.template.evilgodxu.theme.MyApplicationTheme
 
 // Activity 只做入口：挂载导航图与全局副作用，不持有状态字段、不参与业务
-class TemplateActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() {
 
     // 手动 DI：经 Application 容器取依赖，ViewModel 以工厂注入构造参数
     private val appContainer: AppContainer
-        get() = (application as TemplateApplication).container
+        get() = (application as App).container
 
     private val localizationManager: LocalizationManager
         get() = appContainer.localizationManager
 
-    private val activityViewModel: TemplateActivityViewModel by viewModels {
+    private val mainViewModel: MainViewModel by viewModels {
         viewModelFactory {
             initializer {
-                TemplateActivityViewModel(
+                MainViewModel(
                     settingsRepository = appContainer.settingsRepository,
                     appVersion = appContainer.appVersion,
                 )
@@ -54,16 +54,16 @@ class TemplateActivity : ComponentActivity() {
         setContent {
             // 全局副作用：按窗口方向显隐系统栏
             SystemBarsVisibilityEffect()
-            CompositionLocalProvider(LocalTemplateActivityViewModel provides activityViewModel) {
+            CompositionLocalProvider(LocalMainViewModel provides mainViewModel) {
                 ProvideLocalizedContext(localizationManager) {
-                    TemplateContent()
+                    MainContent()
                 }
             }
         }
     }
 
     @Composable
-    private fun TemplateContent() {
+    private fun MainContent() {
         MyApplicationTheme {
             Surface(
                 modifier = Modifier.fillMaxSize(),

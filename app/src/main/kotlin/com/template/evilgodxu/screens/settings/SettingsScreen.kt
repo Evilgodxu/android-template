@@ -5,7 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.template.evilgodxu.LocalTemplateActivityViewModel
+import com.template.evilgodxu.LocalMainViewModel
 import com.template.evilgodxu.screens.settings.compact.SettingsCompactAssembly
 import com.template.evilgodxu.screens.settings.expanded.SettingsExpandedAssembly
 import com.template.evilgodxu.theme.LocalThemeTransitionController
@@ -18,8 +18,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val appUiState by LocalTemplateActivityViewModel.current.uiState.collectAsStateWithLifecycle()
-    val activityViewModel = LocalTemplateActivityViewModel.current
+    val appUiState by LocalMainViewModel.current.uiState.collectAsStateWithLifecycle()
+    val activityViewModel = LocalMainViewModel.current
     val onThemeClick: (Offset) -> Unit = LocalThemeTransitionController.current::revealAt
     when (rememberWindowSizeClass()) {
         WindowSizeClass.Compact -> SettingsCompactAssembly(

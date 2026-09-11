@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
-import com.template.evilgodxu.TemplateAppUiState
+import com.template.evilgodxu.AppUiState
 import com.template.evilgodxu.UpdateCheckOutcome
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 // 设置页窄屏组装器：全宽单列布局
 @Composable
 fun SettingsCompactAssembly(
-    uiState: TemplateAppUiState,
+    uiState: AppUiState,
     updateCheck: StateFlow<UpdateCheckOutcome?>,
     onBack: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,

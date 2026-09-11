@@ -22,7 +22,7 @@
 ## 特性
 
 - **单 Activity 架构**：基于 Jetpack Compose + Material 3，支持边到边（edge-to-edge）渲染，并按屏幕方向显隐系统栏
-- **MVVM + 单向数据流（UDF）**：应用级状态（主题 / 语言 / 版本）由 Activity 作用域的 `TemplateActivityViewModel` 聚合，经 `CompositionLocal` 供界面树消费；各页面另以不可变 `UiState` 经 `StateFlow` 暴露。事件自下而上、状态自上而下
+- **MVVM + 单向数据流（UDF）**：应用级状态（主题 / 语言 / 版本）由 Activity 作用域的 `MainViewModel` 聚合，经 `CompositionLocal` 供界面树消费；各页面另以不可变 `UiState` 经 `StateFlow` 暴露。事件自下而上、状态自上而下
 - **原子化 UI 拆分 + 自适应组装器**：页面入口按窗口尺寸类分派到 `CompactAssembly` / `ExpandedAssembly`，由组装器组合 `component/` 下语义单一、自包含的组件；组件仅向下依赖、绝不反向耦合到组装器
 - **Navigation3 导航**：类型安全路由 + 显式返回栈（根页面支持双击返回退出）
 - **手动依赖注入**：`Application` 持有一站式 `AppContainer`，Activity 与 ViewModel 从容器取依赖
@@ -82,11 +82,11 @@
 │       │   │   ├── icons/               #   矢量图标
 │       │   │   └── dialog/              #   单选弹窗（SingleChoiceDialog）
 │       │   ├── update/                  # 最新版本检查（GitHub API）
+│       │   ├── App.kt                   # Application 入口
 │       │   ├── AppContainer.kt          # 手动 DI 容器（Application 级）
-│       │   ├── TemplateActivity.kt
-│       │   ├── TemplateActivityViewModel.kt   # Activity 作用域全局 UI 状态持有者
-│       │   ├── TemplateAppUiState.kt          # 应用级 UI 状态
-│       │   └── TemplateApplication.kt
+│       │   ├── AppUiState.kt            # 应用级 UI 状态
+│       │   ├── MainActivity.kt          # 唯一 Activity
+│       │   └── MainViewModel.kt         # Activity 作用域全局 UI 状态持有者
 │       └── res/                         # 资源（values / values-en）
 ├── gradle/
 │   ├── libs.versions.toml               # 版本目录（依赖管理）
@@ -102,7 +102,7 @@
 
 应用采用 **MVVM + 单向数据流（UDF）**，状态自上而下流动、事件自下而上传递，形成闭环。状态分两层管理：
 
-- **应用级全局状态**：`TemplateActivityViewModel`（Activity 作用域）将应用级 UI 状态（`themeMode`、`language`、`version`）聚合进不可变的 `TemplateAppUiState`，以 `StateFlow` 暴露，并通过 `LocalTemplateActivityViewModel` `CompositionLocal` 提供给界面树；主题、本地化与各页面 UI 共同消费这一唯一状态源，UI 层不直连数据源。
+- **应用级全局状态**：`MainViewModel`（Activity 作用域）将应用级 UI 状态（`themeMode`、`language`、`version`）聚合进不可变的 `AppUiState`，以 `StateFlow` 暴露，并通过 `LocalMainViewModel` `CompositionLocal` 提供给界面树；主题、本地化与各页面 UI 共同消费这一唯一状态源，UI 层不直连数据源。
 - **页面级局部状态**：每个页面的 `{ScreenName}ViewModel` 持有 `MutableStateFlow<{ScreenName}UiState>` 作为 UI 唯一状态源，对外暴露不可变 `StateFlow`（如 `HomeViewModel` + `HomeUiState`）。
 - **Model（仓库层）**：`SettingsRepository` 抽象了 `DataStore Preferences`，持久化设置以 DataStore 为唯一事实源，经 `AppContainer` 手动构造注入便于测试替换；用户意图以普通方法接收（`setThemeMode`、`setLanguage`），经仓库写回。
 
@@ -116,7 +116,7 @@
 - `{ScreenName}CompactAssembly.kt` / `{ScreenName}ExpandedAssembly.kt` —— 负责页面级布局骨架（Scaffold、顶栏、滚动容器），并**组装可复用的原子组件**。显示形态由窗口尺寸类与屏幕旋转状态共同决定，避免 `if` 式布局分支。
 - `ui/component/` —— 原子化、单一职责的 UI 单元（`Welcome`、`About`、`Appearance`、`AppInfo`、`SectionCard`、`AppTopBar` 等），按语义命名而非泛化后缀。依赖严格向下：组装器可组合组件，组件绝不反向组合进组装器，组件树因此保持解耦。原子组件统一置于顶层 `ui/component/`，页面级组装单元与页面专用弹窗保留在页面包内。
 
-依赖注入采用手动 DI：`TemplateApplication` 在启动时构造成员齐全的 `AppContainer`（DataStore、仓库、语言管理器、版本号），`TemplateActivity` 与 ViewModel 自容器取依赖（ViewModel 经 `viewModelFactory` 注入构造参数），无框架反射。
+依赖注入采用手动 DI：`App` 在启动时构造成员齐全的 `AppContainer`（DataStore、仓库、语言管理器、版本号），`MainActivity` 与 ViewModel 自容器取依赖（ViewModel 经 `viewModelFactory` 注入构造参数），无框架反射。
 
 通用能力被多个页面复用时上提至顶层（`data/`、`ui/`、`theme/`、`localization/`、`windowSize/`、`log/`、`update/`）；仅单页使用的代码保留在页面模块内。
 

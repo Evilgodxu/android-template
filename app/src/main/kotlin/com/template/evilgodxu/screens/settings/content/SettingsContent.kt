@@ -16,7 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.template.evilgodxu.TemplateAppUiState
+import com.template.evilgodxu.AppUiState
 import com.template.evilgodxu.UpdateCheckOutcome
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 // 承载页面状态与副作用，保留在页面包内（content/）而非 ui/component
 @Composable
 fun SettingsContent(
-    uiState: TemplateAppUiState,
+    uiState: AppUiState,
     updateCheck: StateFlow<UpdateCheckOutcome?>,
     onThemeSelected: (ThemeMode) -> Unit,
     onLanguageSelected: (AppLanguage) -> Unit,
