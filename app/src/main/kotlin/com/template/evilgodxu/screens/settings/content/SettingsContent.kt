@@ -1,4 +1,4 @@
-package com.template.evilgodxu.screens.settings.component.content
+package com.template.evilgodxu.screens.settings.content
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
@@ -21,15 +21,16 @@ import com.template.evilgodxu.UpdateCheckOutcome
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
 import com.template.evilgodxu.data.settings.ThemeMode
-import com.template.evilgodxu.screens.settings.component.appInfo.AppInfo
-import com.template.evilgodxu.screens.settings.component.appearance.Appearance
-import com.template.evilgodxu.screens.settings.component.appearance.ThemeSelectionDialog
-import com.template.evilgodxu.screens.settings.component.language.Language
-import com.template.evilgodxu.screens.settings.component.language.LanguageSelectionDialog
+import com.template.evilgodxu.screens.settings.dialog.LanguageSelectionDialog
+import com.template.evilgodxu.screens.settings.dialog.ThemeSelectionDialog
+import com.template.evilgodxu.ui.component.AppInfo
+import com.template.evilgodxu.ui.component.Appearance
+import com.template.evilgodxu.ui.component.Language
 import com.template.evilgodxu.update.AppUpdateChecker
 import kotlinx.coroutines.flow.StateFlow
 
-// 设置页内容单元：设置列表 + 弹窗状态 + 更新检查结果反馈，供各尺寸组装器复用
+// 页面级组装单元：设置列表 + 弹窗状态 + 更新检查结果反馈，供各尺寸组装器复用。
+// 承载页面状态与副作用，保留在页面包内（content/）而非 ui/component
 @Composable
 fun SettingsContent(
     uiState: TemplateAppUiState,

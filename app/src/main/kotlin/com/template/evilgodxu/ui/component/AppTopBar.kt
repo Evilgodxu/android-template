@@ -1,4 +1,4 @@
-package com.template.evilgodxu.ui.topbar
+package com.template.evilgodxu.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row

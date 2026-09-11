@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -18,17 +19,33 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.template.evilgodxu.localization.LocalizationManager
+import com.template.evilgodxu.localization.ProvideLocalizedContext
 import com.template.evilgodxu.navigation.AppNavHost
 import com.template.evilgodxu.theme.MyApplicationTheme
-import com.template.evilgodxu.utils.localization.LocalizationManager
-import com.template.evilgodxu.utils.localization.ProvideLocalizedContext
-import org.koin.android.ext.android.inject
-import org.koin.androidx.viewmodel.ext.android.viewModel
 
 // Activity 只做入口：挂载导航图与全局副作用，不持有状态字段、不参与业务
 class TemplateActivity : ComponentActivity() {
-    private val localizationManager: LocalizationManager by inject()
-    private val activityViewModel: TemplateActivityViewModel by viewModel()
+
+    // 手动 DI：经 Application 容器取依赖，ViewModel 以工厂注入构造参数
+    private val appContainer: AppContainer
+        get() = (application as TemplateApplication).container
+
+    private val localizationManager: LocalizationManager
+        get() = appContainer.localizationManager
+
+    private val activityViewModel: TemplateActivityViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                TemplateActivityViewModel(
+                    settingsRepository = appContainer.settingsRepository,
+                    appVersion = appContainer.appVersion,
+                )
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

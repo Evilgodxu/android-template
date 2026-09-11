@@ -25,7 +25,7 @@
 - **MVVM with unidirectional data flow (UDF)** — app-wide state (theme / language / version) is aggregated in an Activity-scoped `TemplateActivityViewModel` and consumed across the tree via a `CompositionLocal`; each screen adds its own immutable `UiState` exposed as a `StateFlow`. Events flow up, state flows down
 - **Atomic UI decomposition + adaptive assemblies** — the screen entry dispatches by window size class to a `CompactAssembly` / `ExpandedAssembly`, which composes self-contained, single-responsibility components from `component/`; components depend strictly downward and never couple back to the assembly
 - **Navigation3** with typed routes and an explicit back stack (double-back-to-exit on the root)
-- **Koin** dependency injection, started in `Application.onCreate`
+- **Manual DI** — the `Application` owns a single `AppContainer`; the Activity and ViewModels pull dependencies from it
 - **DataStore Preferences** persistence as the single source of truth behind a repository
 - **Theme modes** — System / Light / Dark, with a circular reveal transition animation when switching
 - **In-app language switching** — 简体中文 / English / Follow System, hot-swapped at runtime without recreating the Activity (per-language resource bundles disabled so switching always works)
@@ -47,7 +47,7 @@
 | Language | Kotlin 2.4.20 |
 | UI | Jetpack Compose (BOM 2026.08.00) + Material 3 |
 | Navigation | AndroidX Navigation3 1.1.7 |
-| DI | Koin 4.2.2 |
+| DI | Manual DI (app-level `AppContainer`) |
 | Persistence | DataStore Preferences 1.2.1 |
 | Serialization | kotlinx.serialization 1.11.0 |
 | Lifecycle | androidx.lifecycle 2.11.0, activity-compose 1.13.0 |
@@ -63,35 +63,26 @@
 │       │   ├── data/                    # Data layer (single source of truth)
 │       │   │   ├── repository/          #   SettingsRepository contract + DataStore impl
 │       │   │   └── settings/            #   Settings keys, enums & state
-│       │   ├── di/                      # Koin modules
 │       │   ├── log/                     # CrashLogManager (crash & exception logging)
 │       │   ├── navigation/              # Navigation3 typed routes + NavHost
 │       │   ├── screens/                 # Feature modules
-│       │   │   ├── home/                #   Home feature
+│       │   │   ├── home/                #   Home (Screen + ViewModel + UiState + assemblies)
 │       │   │   │   ├── compact/         #     Narrow-window assembly
-│       │   │   │   ├── expanded/        #     Wide-window assembly
-│       │   │   │   └── component/       #     Semantic components
-│       │   │   │       ├── welcome/     #       Welcome card
-│       │   │   │       └── about/       #       About card
+│       │   │   │   └── expanded/        #     Wide-window assembly
 │       │   │   └── settings/            #   Settings feature
 │       │   │       ├── compact/         #     Narrow-window assembly
 │       │   │       ├── expanded/        #     Wide-window assembly
-│       │   │       └── component/       #     Semantic components
-│       │   │           ├── content/     #       Screen content (shared by assemblies)
-│       │   │           ├── appearance/  #       Theme item + selection dialog
-│       │   │           ├── language/    #       Language item + selection dialog
-│       │   │           ├── appInfo/     #       About / version / update check
-│       │   │           └── clickableItem/ #   Clickable settings row
+│       │   │       ├── content/         #     Screen-level composition unit (shared by assemblies)
+│       │   │       └── dialog/          #     Screen-specific dialogs (theme/language selection)
 │       │   ├── theme/                   # Material 3 color scheme & typography
-│       │   ├── ui/                      # Shared UI
+│       │   ├── localization/            # In-app localization (LocalizationManager)
+│       │   ├── windowSize/              # Window size classes
+│       │   ├── ui/                      # Cross-screen shared UI
+│       │   │   ├── component/           #   Atomic layout components (SectionCard/AppTopBar/…)
 │       │   │   ├── icons/               #   Vector icons
-│       │   │   ├── section/             #   SectionCard container
-│       │   │   ├── topbar/              #   AppTopBar
-│       │   │   ├── windowSize/          #   Window size classes
 │       │   │   └── dialog/              #   SingleChoiceDialog
 │       │   ├── update/                  # Latest-release check (GitHub API)
-│       │   ├── utils/
-│       │   │   └── localization/        #   In-app localization manager
+│       │   ├── AppContainer.kt          # Manual DI container (app-level)
 │       │   ├── TemplateActivity.kt
 │       │   ├── TemplateActivityViewModel.kt   # Activity-scoped global UI state holder
 │       │   ├── TemplateAppUiState.kt          # App-level UI state
@@ -113,7 +104,7 @@ The app follows **MVVM with unidirectional data flow (UDF)**, forming a closed l
 
 - **App-level global state** — `TemplateActivityViewModel` (Activity-scoped) aggregates app-wide UI state (`themeMode`, `language`, `version`) into the immutable `TemplateAppUiState`, exposed as a `StateFlow` and provided to the UI tree via the `LocalTemplateActivityViewModel` `CompositionLocal`. Theme, localization and screen UIs all consume this single source; the UI layer never touches the data source directly.
 - **Screen-level local state** — each screen's `{ScreenName}ViewModel` owns a `MutableStateFlow<{ScreenName}UiState>` as its single source of UI truth, exposed as an immutable `StateFlow` (e.g. `HomeViewModel` + `HomeUiState`).
-- **Model** — the repository layer. `SettingsRepository` abstracts `DataStore Preferences`, which is the single source of truth for persisted settings; it is constructor-injected via Koin (and swappable for tests). User intents are received as plain methods (`setThemeMode`, `setLanguage`) and written back through the repository.
+- **Model** — the repository layer. `SettingsRepository` abstracts `DataStore Preferences`, which is the single source of truth for persisted settings; it is manually constructed and injected via `AppContainer` (swap-friendly for tests). User intents are received as plain methods (`setThemeMode`, `setLanguage`) and written back through the repository.
 
 The typical flow: `DataStore → Repository → ViewModel → UiState → UI` for state, and the reverse path for events.
 
@@ -123,9 +114,11 @@ Code is organized with a **modular pattern driven by window size classes**, mirr
 
 - `{ScreenName}Screen.kt` — a thin screen entry that hoists state and events, dispatches to an assembly by window size class, and hosts cross-form effects. It contains **no layout code**.
 - `{ScreenName}CompactAssembly.kt` / `{ScreenName}ExpandedAssembly.kt` — own screen-level layout scaffolding (Scaffold, top bar, scroll container) and **assemble reusable atomic components**. The displayed form is decided jointly by window size class and screen rotation state; `if`-based layout branching is avoided.
-- `component/<semantic-name>/` — atomic, single-responsibility UI units (`Welcome`, `About`, `Appearance`, `AppInfo`, …) named by semantics rather than generic suffixes. Dependencies point strictly downward: an assembly may compose components, but a component never composes back into an assembly, so the tree stays uncoupled.
+- `ui/component/` — atomic, single-responsibility UI units (`Welcome`, `About`, `Appearance`, `AppInfo`, `SectionCard`, `AppTopBar`, …) named by semantics rather than generic suffixes. Dependencies point strictly downward: an assembly may compose components, but a component never composes back into an assembly, so the tree stays uncoupled. Atomic components live together in top-level `ui/component/`; screen-level composition units and screen-specific dialogs stay in the feature package.
 
-Shared cross-feature code is hoisted to the top level (`data/`, `ui/`, `theme/`, `utils/`, `log/`, `update/`, `di/`); code used by a single feature stays inside that feature module.
+DI is manual: `TemplateApplication` builds a fully-populated `AppContainer` (DataStore, repository, localization manager, version) at startup, and the Activity / ViewModels pull dependencies from it (ViewModels get constructor args via a `viewModelFactory`). No framework or reflection.
+
+Shared cross-feature code is hoisted to the top level (`data/`, `ui/`, `theme/`, `localization/`, `windowSize/`, `log/`, `update/`); code used by a single feature stays inside that feature module.
 
 ## Getting Started
 
@@ -168,7 +161,7 @@ The keystore file is expected at `jh.keystore` in the project root (adjust `stor
 - **App name**: edit `app_name` in `app/src/main/res/values/strings.xml`.
 - **Theme colors**: edit `app/src/main/kotlin/.../theme/Color.kt`.
 - **Supported ABIs**: adjust `ndk.abiFilters` in `app/build.gradle.kts` (currently `arm64-v8a`).
-- **Add a new screen**: create a `screens/<name>/` feature module with its `UiState` + `ViewModel` + `Compact`/`Expanded` assemblies and atomic components under `component/`, register the route in `navigation/Screen.kt`, and add it to `AppNavHost`.
+- **Add a new screen**: create a `screens/<name>/` feature module with its `UiState` + `ViewModel` + `Compact`/`Expanded` assemblies and atomic components under `ui/component/`, register the route in `navigation/Screen.kt`, and add it to `AppNavHost`.
 
 ## License
 

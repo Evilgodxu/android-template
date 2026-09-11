@@ -134,7 +134,6 @@ androidComponents {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
-    implementation(platform(libs.koin.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
@@ -147,10 +146,6 @@ dependencies {
     // 导航框架 Navigation3
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
-
-    // 依赖注入 Koin（在 Application.onCreate 中手动启动）
-    implementation(libs.koin.android)
-    implementation(libs.koin.core)
 
     // 键值存储 DataStore
     implementation(libs.androidx.datastore.preferences)

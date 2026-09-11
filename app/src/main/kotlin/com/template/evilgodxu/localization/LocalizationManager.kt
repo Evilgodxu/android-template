@@ -1,4 +1,4 @@
-package com.template.evilgodxu.utils.localization
+package com.template.evilgodxu.localization
 
 import android.app.Activity
 import android.content.Context

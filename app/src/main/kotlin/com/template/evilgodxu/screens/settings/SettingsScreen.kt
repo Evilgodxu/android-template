@@ -9,8 +9,8 @@ import com.template.evilgodxu.LocalTemplateActivityViewModel
 import com.template.evilgodxu.screens.settings.compact.SettingsCompactAssembly
 import com.template.evilgodxu.screens.settings.expanded.SettingsExpandedAssembly
 import com.template.evilgodxu.theme.LocalThemeTransitionController
-import com.template.evilgodxu.ui.windowSize.WindowSizeClass
-import com.template.evilgodxu.ui.windowSize.rememberWindowSizeClass
+import com.template.evilgodxu.windowSize.WindowSizeClass
+import com.template.evilgodxu.windowSize.rememberWindowSizeClass
 
 // 页面入口：装配状态、按窗口尺寸类分发形态与跨形态副作用，不含布局
 @Composable

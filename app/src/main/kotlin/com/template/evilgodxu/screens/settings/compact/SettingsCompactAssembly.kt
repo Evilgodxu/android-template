@@ -16,9 +16,9 @@ import com.template.evilgodxu.UpdateCheckOutcome
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
 import com.template.evilgodxu.data.settings.ThemeMode
-import com.template.evilgodxu.screens.settings.component.content.SettingsContent
+import com.template.evilgodxu.screens.settings.content.SettingsContent
+import com.template.evilgodxu.ui.component.AppTopBar
 import com.template.evilgodxu.ui.icons.AppIcons
-import com.template.evilgodxu.ui.topbar.AppTopBar
 import kotlinx.coroutines.flow.StateFlow
 
 // 设置页窄屏组装器：全宽单列布局

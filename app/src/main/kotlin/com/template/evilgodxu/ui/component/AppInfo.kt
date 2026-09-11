@@ -1,4 +1,4 @@
-package com.template.evilgodxu.screens.settings.component.appInfo
+package com.template.evilgodxu.ui.component
 
 import android.content.Context
 import android.content.Intent

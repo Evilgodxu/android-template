@@ -10,7 +10,7 @@ import com.template.evilgodxu.data.settings.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// 设置仓库契约：数据层入口，Koin 注册实现，测试注入 fake
+// 设置仓库契约：数据层入口，AppContainer 注入实现，测试注入 fake
 interface SettingsRepository {
     // 设置状态流：主题模式驱动全局配色
     val settings: Flow<SettingsState>

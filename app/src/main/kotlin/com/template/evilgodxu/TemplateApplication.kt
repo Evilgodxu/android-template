@@ -1,23 +1,18 @@
 package com.template.evilgodxu
 
 import android.app.Application
-import com.template.evilgodxu.di.appModule
 import com.template.evilgodxu.log.CrashLogManager
-import org.koin.android.ext.koin.androidContext
-import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.startKoin
 
 class TemplateApplication : Application() {
+
+    // 手动 DI 容器：Application 级单例，宿主 Activity 启动时取用
+    lateinit var container: AppContainer
+        private set
 
     override fun onCreate() {
         super.onCreate()
         // 最先初始化崩溃日志，捕获启动阶段异常
         CrashLogManager.init(this)
-
-        startKoin {
-            androidLogger()
-            androidContext(this@TemplateApplication)
-            modules(appModule)
-        }
+        container = AppContainer(this)
     }
 }

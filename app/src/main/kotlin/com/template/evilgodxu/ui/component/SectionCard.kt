@@ -1,4 +1,4 @@
-package com.template.evilgodxu.ui.section
+package com.template.evilgodxu.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding

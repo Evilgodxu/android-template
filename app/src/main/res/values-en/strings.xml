@@ -7,7 +7,7 @@
     <string name="home_welcome_title">Welcome</string>
     <string name="home_welcome_message">An out-of-the-box Android app template with a ready-to-use project skeleton and common capabilities, ready for your own features.</string>
     <string name="home_about_title">About</string>
-    <string name="home_about_message">Built on a single-activity architecture with Jetpack Compose, featuring MVVM, Koin DI, DataStore persistence, light/dark themes, multi-language support, and a modular code organization.</string>
+    <string name="home_about_message">Built on a single-activity architecture with Jetpack Compose, featuring MVVM, manual DI, DataStore persistence, light/dark themes, multi-language support, and a modular code organization.</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

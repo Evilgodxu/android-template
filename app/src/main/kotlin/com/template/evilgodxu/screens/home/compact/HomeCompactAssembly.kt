@@ -15,10 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.template.evilgodxu.R
-import com.template.evilgodxu.screens.home.component.about.About
-import com.template.evilgodxu.screens.home.component.welcome.Welcome
+import com.template.evilgodxu.ui.component.About
+import com.template.evilgodxu.ui.component.AppTopBar
+import com.template.evilgodxu.ui.component.Welcome
 import com.template.evilgodxu.ui.icons.AppIcons
-import com.template.evilgodxu.ui.topbar.AppTopBar
 
 // 首页窄屏组装器：全宽单列布局
 @Composable

@@ -1,4 +1,4 @@
-package com.template.evilgodxu.screens.settings.component.appearance
+package com.template.evilgodxu.screens.settings.dialog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -6,7 +6,7 @@ import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.ThemeMode
 import com.template.evilgodxu.ui.dialog.SingleChoiceDialog
 
-/** 主题选择弹窗：复用 [SingleChoiceDialog]，仅提供主题选项与本地化文案 */
+/** 页面专用弹窗：复用 [SingleChoiceDialog]，仅提供主题选项与本地化文案；收敛于页面包内 dialog/ */
 @Composable
 fun ThemeSelectionDialog(
     currentTheme: ThemeMode,

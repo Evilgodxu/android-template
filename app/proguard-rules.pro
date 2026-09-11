@@ -26,9 +26,3 @@
     private ** descriptor;
 }
 
-# Koin：保留模块与注解元数据供运行时装配
--keep class * extends org.koin.core.module.Module { *; }
--keepclassmembers class * {
-    @org.koin.core.annotation.* *;
-}
-
