@@ -1,4 +1,4 @@
-package com.template.evilgodxu.ui.component
+package com.template.evilgodxu.screens.home.component.about
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.template.evilgodxu.R
+import com.template.evilgodxu.ui.component.SectionCard
 
 // 项目简介卡片：复用全局 SectionCard 容器
 @Composable

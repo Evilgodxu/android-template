@@ -1,10 +1,12 @@
-package com.template.evilgodxu.ui.component
+package com.template.evilgodxu.screens.settings.component.appearance
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.ThemeMode
+import com.template.evilgodxu.ui.component.SectionCard
+import com.template.evilgodxu.ui.component.SettingsClickableItem
 import com.template.evilgodxu.ui.icons.AppIcons
 
 // 外观设置项

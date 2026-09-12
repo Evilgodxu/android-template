@@ -1,9 +1,11 @@
-package com.template.evilgodxu.ui.component
+package com.template.evilgodxu.screens.settings.component.language
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
+import com.template.evilgodxu.ui.component.SectionCard
+import com.template.evilgodxu.ui.component.SettingsClickableItem
 import com.template.evilgodxu.ui.icons.AppIcons
 
 // 语言设置项

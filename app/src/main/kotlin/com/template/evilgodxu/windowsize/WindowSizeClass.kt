@@ -1,4 +1,4 @@
-package com.template.evilgodxu.windowSize
+package com.template.evilgodxu.windowsize
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration

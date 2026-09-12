@@ -1,10 +1,10 @@
-package com.template.evilgodxu.screens.settings.dialog
+package com.template.evilgodxu.screens.settings.component.dialog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
-import com.template.evilgodxu.ui.dialog.SingleChoiceDialog
+import com.template.evilgodxu.ui.component.dialog.SingleChoiceDialog
 
 /** 页面专用弹窗：复用 [SingleChoiceDialog]，仅提供语言选项与本地化文案 */
 @Composable

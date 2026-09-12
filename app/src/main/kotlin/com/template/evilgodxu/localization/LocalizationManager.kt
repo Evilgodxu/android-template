@@ -6,6 +6,8 @@ import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -52,13 +54,17 @@ fun ProvideLocalizedContext(
     val localizedContext = localizationManager.createLocalizedContext(
         localizationManager.localeFor(appUiState.language),
     )
-    // LocalActivity 的默认值派生自 LocalContext.current（沿 ContextWrapper 链解包）；
-    // 替换为本地化 Context 后会解包不到 Activity（底层是 Application），导致依赖 Activity 的
-    // 能力失效（如首页双击退出的 finish()），因此显式提供进入时的宿主 Activity
+    // LocalActivity 与 LocalActivityResultRegistryOwner 的默认值都沿 LocalContext 链推导；
+    // 本地化 Context 基于 Application 创建，链上取不到宿主 Activity，会使依赖 Activity 的能力
+    // 失效（如首页双击退出的 finish()、Activity Result 注册），故显式提供进入时的宿主 Activity 与其注册表能力
     val activity = checkNotNull(LocalContext.current.findActivity())
+    val resultRegistryOwner = checkNotNull(activity as? ActivityResultRegistryOwner) {
+        "宿主 Activity 必须实现 ActivityResultRegistryOwner"
+    }
     CompositionLocalProvider(
         LocalContext provides localizedContext,
         LocalActivity provides activity,
+        LocalActivityResultRegistryOwner provides resultRegistryOwner,
     ) {
         content()
     }

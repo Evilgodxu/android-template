@@ -17,24 +17,29 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.template.evilgodxu.AppUiState
-import com.template.evilgodxu.UpdateCheckOutcome
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
 import com.template.evilgodxu.data.settings.ThemeMode
-import com.template.evilgodxu.screens.settings.content.SettingsContent
+import com.template.evilgodxu.screens.settings.SettingsUiState
+import com.template.evilgodxu.screens.settings.component.content.SettingsContent
 import com.template.evilgodxu.ui.component.AppTopBar
 import com.template.evilgodxu.ui.icons.AppIcons
-import kotlinx.coroutines.flow.StateFlow
+import com.template.evilgodxu.update.UpdateMessage
+import kotlinx.coroutines.flow.Flow
 
 // 设置页宽屏组装器：内容限宽居中，避免宽屏下过度拉伸
 @Composable
 fun SettingsExpandedAssembly(
     uiState: AppUiState,
-    updateCheck: StateFlow<UpdateCheckOutcome?>,
+    settingsUiState: SettingsUiState,
+    updateMessages: Flow<UpdateMessage>,
     onBack: () -> Unit,
+    onShowThemeDialog: (Offset) -> Unit,
+    onDismissThemeDialog: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,
+    onShowLanguageDialog: () -> Unit,
+    onDismissLanguageDialog: () -> Unit,
     onLanguageSelected: (AppLanguage) -> Unit,
-    onThemeClick: (Offset) -> Unit,
     onCheckForUpdate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -60,10 +65,14 @@ fun SettingsExpandedAssembly(
         ) {
             SettingsContent(
                 uiState = uiState,
-                updateCheck = updateCheck,
+                settingsUiState = settingsUiState,
+                updateMessages = updateMessages,
+                onShowThemeDialog = onShowThemeDialog,
+                onDismissThemeDialog = onDismissThemeDialog,
                 onThemeSelected = onThemeSelected,
+                onShowLanguageDialog = onShowLanguageDialog,
+                onDismissLanguageDialog = onDismissLanguageDialog,
                 onLanguageSelected = onLanguageSelected,
-                onThemeClick = onThemeClick,
                 onCheckForUpdate = onCheckForUpdate,
                 modifier = Modifier
                     .align(Alignment.TopCenter)

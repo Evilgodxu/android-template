@@ -1,4 +1,4 @@
-package com.template.evilgodxu.ui.component
+package com.template.evilgodxu.screens.settings.component.info
 
 import android.content.Context
 import android.content.Intent

@@ -147,6 +147,10 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
 
+    // Navigation3 页面级 ViewModel 作用域支持
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
     // 键值存储 DataStore
     implementation(libs.androidx.datastore.preferences)
 

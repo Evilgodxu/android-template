@@ -7,8 +7,12 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.template.evilgodxu.data.repository.DataStoreSettingsRepository
+import com.template.evilgodxu.data.repository.DataStoreUpdateCheckRepository
 import com.template.evilgodxu.data.repository.SettingsRepository
+import com.template.evilgodxu.data.repository.UpdateCheckRepository
 import com.template.evilgodxu.localization.LocalizationManager
+import com.template.evilgodxu.update.ApkInstaller
+import com.template.evilgodxu.update.UpdateDownloadCoordinator
 
 // 手动 DI 容器：Application 启动时构造并持有全部依赖
 // 数据源经构造注入仓库，便于单元测试替换
@@ -20,8 +24,21 @@ class AppContainer(context: Context) {
         DataStoreSettingsRepository(preferencesDataStore)
     }
 
+    val updateCheckRepository: UpdateCheckRepository by lazy {
+        DataStoreUpdateCheckRepository(preferencesDataStore)
+    }
+
     val localizationManager: LocalizationManager by lazy {
         LocalizationManager(appContext)
+    }
+
+    // 更新下载：协调器持有下载状态并启动前台服务，安装器负责拉起系统安装流程
+    val updateDownloadCoordinator: UpdateDownloadCoordinator by lazy {
+        UpdateDownloadCoordinator(appContext)
+    }
+
+    val apkInstaller: ApkInstaller by lazy {
+        ApkInstaller(appContext)
     }
 
     // 应用版本号：冷启动读取一次

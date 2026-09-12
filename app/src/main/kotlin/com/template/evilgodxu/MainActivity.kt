@@ -13,18 +13,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.template.evilgodxu.localization.LocalizationManager
 import com.template.evilgodxu.localization.ProvideLocalizedContext
 import com.template.evilgodxu.navigation.AppNavHost
 import com.template.evilgodxu.theme.MyApplicationTheme
+import com.template.evilgodxu.ui.component.dialog.UpdateDialog
+import com.template.evilgodxu.update.AppUpdateViewModel
+import com.template.evilgodxu.update.LocalAppUpdateViewModel
 
 // Activity 只做入口：挂载导航图与全局副作用，不持有状态字段、不参与业务
 class MainActivity : ComponentActivity() {
@@ -47,6 +53,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val updateViewModel: AppUpdateViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                AppUpdateViewModel(
+                    updateCheckRepository = appContainer.updateCheckRepository,
+                    coordinator = appContainer.updateDownloadCoordinator,
+                    installer = appContainer.apkInstaller,
+                    appVersion = appContainer.appVersion,
+                )
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,7 +73,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             // 全局副作用：按窗口方向显隐系统栏
             SystemBarsVisibilityEffect()
-            CompositionLocalProvider(LocalMainViewModel provides mainViewModel) {
+            CompositionLocalProvider(
+                LocalMainViewModel provides mainViewModel,
+                LocalAppUpdateViewModel provides updateViewModel,
+            ) {
                 ProvideLocalizedContext(localizationManager) {
                     MainContent()
                 }
@@ -65,11 +87,27 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun MainContent() {
         MyApplicationTheme {
+            val updateUiState by updateViewModel.uiState.collectAsStateWithLifecycle()
+            // 回到前台：若仍有待安装的更新包，重新弹出安装确认对话框
+            LifecycleResumeEffect(Unit) {
+                updateViewModel.onForeground()
+                onPauseOrDispose { }
+            }
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background,
             ) {
                 AppNavHost()
+            }
+            // 更新对话框挂在应用级：两个页面共用同一份更新状态
+            if (updateUiState.dialogVisible) {
+                UpdateDialog(
+                    state = updateUiState,
+                    onDismiss = updateViewModel::dismissDialog,
+                    onStartDownload = updateViewModel::startDownload,
+                    onRetry = updateViewModel::retryDownload,
+                    onInstall = updateViewModel::install,
+                )
             }
         }
     }

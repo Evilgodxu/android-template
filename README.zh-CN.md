@@ -30,7 +30,7 @@
 - **主题模式**：跟随系统 / 浅色 / 深色，切换时带圆形扩散过渡动效
 - **应用内多语言**：简体中文 / English / 跟随系统，运行时热切换、无需重建 Activity（已禁用按语言分包，保证切换始终生效）
 - **崩溃日志管理**：未捕获异常与捕获异常写入应用专属外部目录，并链式调用系统默认处理器；设置页可一键分享今日日志
-- **版本更新检查**：设置页查询 GitHub 最新 Release，发现新版本时提示
+- **应用内更新**：进入首页每日自动检查一次 GitHub 最新 Release，设置页亦可手动检查；发现新版本弹出限高可滚动的更新内容对话框（稍后 / 更新）；安装包由前台服务下载（连接/读取 15 秒超时、进度通知，关闭对话框不中断下载），完成后比对 GitHub 公布的 SHA-256 摘要（缺失或不匹配即中止），通过后交由系统安装器安装
 - **构建优化**：Release 启用 R8 + 资源压缩、签名构建，仅打 `arm64-v8a` ABI，APK 输出命名固定
 
 ## 页面
@@ -46,7 +46,7 @@
 | --- | --- |
 | 语言 | Kotlin 2.4.20 |
 | UI | Jetpack Compose（BOM 2026.08.00）+ Material 3 |
-| 导航 | AndroidX Navigation3 1.1.7 |
+| 导航 | AndroidX Navigation3 1.1.7（+ lifecycle-viewmodel-navigation3 2.11.0） |
 | 依赖注入 | 手动 DI（Application 级 `AppContainer`） |
 | 持久化 | DataStore Preferences 1.2.1 |
 | 序列化 | kotlinx.serialization 1.11.0 |
@@ -61,30 +61,31 @@
 │   └── src/main/
 │       ├── kotlin/com/template/evilgodxu/
 │       │   ├── data/                    # 数据层（唯一数据源）
-│       │   │   ├── repository/          #   SettingsRepository 契约 + DataStore 实现
+│       │   │   ├── repository/          #   仓库契约 + DataStore 实现
 │       │   │   └── settings/            #   设置键、枚举与状态
 │       │   ├── log/                     # 崩溃与异常日志（CrashLogManager）
 │       │   ├── navigation/              # Navigation3 类型安全路由 + 导航宿主
 │       │   ├── screens/                 # 页面模块
-│       │   │   ├── home/                #   首页（Screen + ViewModel + UiState + 形态组装器）
+│       │   │   ├── home/                #   首页（Screen + UiState + ViewModel）
 │       │   │   │   ├── compact/         #     窄屏组装器
-│       │   │   │   └── expanded/        #     宽屏组装器
-│       │   │   └── settings/            #   设置页
+│       │   │   │   ├── expanded/        #     宽屏组装器
+│       │   │   │   └── component/       #     首页专用组件（welcome/ about/）
+│       │   │   └── settings/            #   设置页（Screen + UiState + ViewModel）
 │       │   │       ├── compact/         #     窄屏组装器
 │       │   │       ├── expanded/        #     宽屏组装器
-│       │   │       ├── content/         #     页面级组装单元（各尺寸组装器复用）
-│       │   │       └── dialog/          #     页面专用弹窗（主题/语言选择）
+│       │   │       └── component/       #     设置页专用组件（appearance/ language/ info/ content/ dialog/）
 │       │   ├── theme/                   # Material 3 配色与字体
 │       │   ├── localization/            # 应用内多语言管理（LocalizationManager）
-│       │   ├── windowSize/              # 窗口尺寸类
+│       │   ├── permission/              # 权限状态管理器（运行时权限与特殊权限统一出口）
+│       │   ├── windowsize/              # 窗口尺寸类
 │       │   ├── ui/                      # 跨页面复用 UI
-│       │   │   ├── component/           #   原子化布局组件（SectionCard/AppTopBar/通用组件）
-│       │   │   ├── icons/               #   矢量图标
-│       │   │   └── dialog/              #   单选弹窗（SingleChoiceDialog）
-│       │   ├── update/                  # 最新版本检查（GitHub API）
+│       │   │   ├── component/           #   共享组件（SectionCard/AppTopBar/SettingsClickableItem）
+│       │   │   │   └── dialog/          #     SingleChoiceDialog + UpdateDialog
+│       │   │   └── icons/               #   矢量图标
+│       │   ├── update/                  # 版本检查 / 下载 / 安装（GitHub API + 前台服务）
 │       │   ├── App.kt                   # Application 入口
 │       │   ├── AppContainer.kt          # 手动 DI 容器（Application 级）
-│       │   ├── AppUiState.kt            # 应用级 UI 状态
+│       │   ├── AppUiState.kt            # 不可变的应用级 UI 状态
 │       │   ├── MainActivity.kt          # 唯一 Activity
 │       │   └── MainViewModel.kt         # Activity 作用域全局 UI 状态持有者
 │       └── res/                         # 资源（values / values-en）
@@ -103,7 +104,8 @@
 应用采用 **MVVM + 单向数据流（UDF）**，状态自上而下流动、事件自下而上传递，形成闭环。状态分两层管理：
 
 - **应用级全局状态**：`MainViewModel`（Activity 作用域）将应用级 UI 状态（`themeMode`、`language`、`version`）聚合进不可变的 `AppUiState`，以 `StateFlow` 暴露，并通过 `LocalMainViewModel` `CompositionLocal` 提供给界面树；主题、本地化与各页面 UI 共同消费这一唯一状态源，UI 层不直连数据源。
-- **页面级局部状态**：每个页面的 `{ScreenName}ViewModel` 持有 `MutableStateFlow<{ScreenName}UiState>` 作为 UI 唯一状态源，对外暴露不可变 `StateFlow`（如 `HomeViewModel` + `HomeUiState`）。
+- **页面级局部状态**：每个页面的 `{ScreenName}ViewModel` 持有 `MutableStateFlow<{ScreenName}UiState>` 作为 UI 唯一状态源，对外暴露不可变 `StateFlow`（如 `SettingsViewModel` + `SettingsUiState`）；其作用域绑定导航条目，页面出栈即回收。
+- **更新检查**：独立为 Activity 作用域的 `AppUpdateViewModel`，避免 `MainViewModel` 膨胀：进入首页触发每日一次的自动检查、设置页可手动检查，结果经 `Channel` 一次性事件下发，最近一次自动检查日期经 `UpdateCheckRepository` 持久化。
 - **Model（仓库层）**：`SettingsRepository` 抽象了 `DataStore Preferences`，持久化设置以 DataStore 为唯一事实源，经 `AppContainer` 手动构造注入便于测试替换；用户意图以普通方法接收（`setThemeMode`、`setLanguage`），经仓库写回。
 
 典型流向：`DataStore → Repository → ViewModel → UiState → UI`（状态），事件则沿相反路径上行。
@@ -114,11 +116,11 @@
 
 - `{ScreenName}Screen.kt` —— 轻量页面入口：提升（hoist）状态与事件、按窗口尺寸类分派到组装器，并承载跨形态副作用，**不含布局代码**。
 - `{ScreenName}CompactAssembly.kt` / `{ScreenName}ExpandedAssembly.kt` —— 负责页面级布局骨架（Scaffold、顶栏、滚动容器），并**组装可复用的原子组件**。显示形态由窗口尺寸类与屏幕旋转状态共同决定，避免 `if` 式布局分支。
-- `ui/component/` —— 原子化、单一职责的 UI 单元（`Welcome`、`About`、`Appearance`、`AppInfo`、`SectionCard`、`AppTopBar` 等），按语义命名而非泛化后缀。依赖严格向下：组装器可组合组件，组件绝不反向组合进组装器，组件树因此保持解耦。原子组件统一置于顶层 `ui/component/`，页面级组装单元与页面专用弹窗保留在页面包内。
+- `ui/component/` —— 跨页面共享组件（`SectionCard`、`AppTopBar`、`SettingsClickableItem`，以及 `component/dialog/` 下的 `SingleChoiceDialog`），按语义命名；仅单页使用的组件下沉到该页面自己的 `component/` 子目录。依赖严格向下：组装器可组合组件，组件绝不反向组合进组装器，组件树因此保持解耦。
 
-依赖注入采用手动 DI：`App` 在启动时构造成员齐全的 `AppContainer`（DataStore、仓库、语言管理器、版本号），`MainActivity` 与 ViewModel 自容器取依赖（ViewModel 经 `viewModelFactory` 注入构造参数），无框架反射。
+依赖注入采用手动 DI：`App` 在启动时构造成员齐全的 `AppContainer`（DataStore、仓库、语言管理器、版本号），`MainActivity` 与 ViewModel 自容器取依赖（ViewModel 经 `viewModelFactory` 注入构造参数）；页面级 ViewModel 经 `viewModel()` 获取，作用域由 Navigation3 的 `rememberViewModelStoreNavEntryDecorator()` 绑定到导航条目，无框架反射。
 
-通用能力被多个页面复用时上提至顶层（`data/`、`ui/`、`theme/`、`localization/`、`windowSize/`、`log/`、`update/`）；仅单页使用的代码保留在页面模块内。
+通用能力被多个页面复用时上提至顶层（`data/`、`ui/`、`theme/`、`localization/`、`windowsize/`、`log/`、`update/`）；仅单页使用的代码保留在页面模块内。
 
 ## 快速开始
 
