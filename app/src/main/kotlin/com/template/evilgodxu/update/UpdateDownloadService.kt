@@ -7,7 +7,6 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import com.template.evilgodxu.App
-import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -51,7 +50,7 @@ class UpdateDownloadService : Service() {
 
     private suspend fun runDownload(info: UpdateInfo) {
         try {
-            val targetFile = File(cacheDir, "$DOWNLOAD_DIR_NAME/${info.apkFileName}")
+            val targetFile = container.updateDownloadCoordinator.downloadFile(info.version)
             UpdateDownloader.download(info, targetFile) { percent ->
                 UpdateNotifications.post(this, UpdateNotifications.progress(this, percent))
             }
@@ -72,7 +71,6 @@ class UpdateDownloadService : Service() {
     }
 
     companion object {
-        private const val DOWNLOAD_DIR_NAME = "updates"
         private const val EXTRA_VERSION = "extra_version"
         private const val EXTRA_CHANGELOG = "extra_changelog"
         private const val EXTRA_APK_URL = "extra_apk_url"

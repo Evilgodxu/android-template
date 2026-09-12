@@ -60,6 +60,8 @@ class AppUpdateViewModel(
     // 待处理的更新包信息，供下载失败后重试
     private var pendingInfo: UpdateInfo? = null
     private var checking = false
+    // 本次会话内是否已把安装交给系统安装器：已交付则不再自动弹出待安装对话框
+    private var installHandedOff = false
 
     init {
         viewModelScope.launch {
@@ -80,6 +82,8 @@ class AppUpdateViewModel(
                 }
             }
         }
+        // 进程被杀后重启：从磁盘恢复待安装态，避免"下载完成"提示丢失
+        viewModelScope.launch { coordinator.restorePendingInstall(appVersion) }
     }
 
     // 进入首页时调用：当天已自动检查过则跳过
@@ -103,6 +107,7 @@ class AppUpdateViewModel(
 
     fun startDownload() {
         val info = (_uiState.value.phase as? UpdatePhase.Available)?.info ?: return
+        installHandedOff = false
         coordinator.start(info)
     }
 
@@ -112,15 +117,21 @@ class AppUpdateViewModel(
 
     // 交给系统安装器完成安装；应用不介入授权与安装过程
     fun install() {
-        val file = (coordinator.state.value as? UpdateDownloadState.Completed)?.file ?: return
-        installer.install(file)
-        coordinator.clearNotification()
-        coordinator.reset()
-        _uiState.value = UpdateUiState()
+        viewModelScope.launch {
+            val file = coordinator.installableFile(appVersion) ?: return@launch
+            installer.install(file)
+            installHandedOff = true
+            coordinator.clearNotification()
+            coordinator.reset()
+            _uiState.value = UpdateUiState()
+        }
     }
 
-    // 回到前台：若仍有待安装的更新包，重新弹出安装确认对话框（不直接触发安装）
+    // 回到前台：恢复磁盘上的待安装包并重新弹出安装确认对话框（不直接触发安装）
     fun onForeground() {
+        if (!installHandedOff) {
+            viewModelScope.launch { coordinator.restorePendingInstall(appVersion) }
+        }
         _uiState.update { state ->
             if (state.phase is UpdatePhase.InstallReady) state.copy(dialogVisible = true) else state
         }
@@ -138,9 +149,16 @@ class AppUpdateViewModel(
                 UpdateCheckResult.IncompleteRelease -> _messages.emit(UpdateMessage.IncompleteRelease)
 
                 is UpdateCheckResult.Available -> {
-                    pendingInfo = result.info
-                    _uiState.update {
-                        it.copy(phase = UpdatePhase.Available(result.info), dialogVisible = true)
+                    // 本地已有该版本已校验的安装包时直接进入待安装，避免重复下载
+                    if (coordinator.hasPendingInstall(result.info.version)) {
+                        _uiState.update {
+                            it.copy(phase = UpdatePhase.InstallReady, dialogVisible = true)
+                        }
+                    } else {
+                        pendingInfo = result.info
+                        _uiState.update {
+                            it.copy(phase = UpdatePhase.Available(result.info), dialogVisible = true)
+                        }
                     }
                 }
             }

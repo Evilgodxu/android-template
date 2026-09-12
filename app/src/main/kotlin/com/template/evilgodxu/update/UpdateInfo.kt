@@ -9,9 +9,19 @@ data class UpdateInfo(
     val apkSha256: String,
 )
 
-// 安装包本地文件名：取下载地址最后一段，剔除查询串，兜底为固定名
-val UpdateInfo.apkFileName: String
-    get() = apkUrl.substringAfterLast('/').substringBefore('?').ifBlank { "update.apk" }
+// 待安装包命名约定：update-<版本>.apk，按版本命名便于判断本地是否已下载该版本
+private const val PENDING_APK_PREFIX = "update-"
+private const val PENDING_APK_SUFFIX = ".apk"
+private val UNSAFE_FILE_NAME_CHARS = Regex("[^A-Za-z0-9._-]")
+
+fun pendingApkFileName(version: String): String =
+    "$PENDING_APK_PREFIX${version.replace(UNSAFE_FILE_NAME_CHARS, "_")}$PENDING_APK_SUFFIX"
+
+// 由待安装包文件名还原版本；不符合命名约定（如未完成的 .part 文件）时返回 null
+fun pendingApkVersion(fileName: String): String? = fileName
+    .takeIf { it.startsWith(PENDING_APK_PREFIX) && it.endsWith(PENDING_APK_SUFFIX) }
+    ?.substring(PENDING_APK_PREFIX.length, fileName.length - PENDING_APK_SUFFIX.length)
+    ?.takeIf { it.isNotBlank() }
 
 // 检查结果：已是最新 / 有新版本 / 检查失败 / 版本更新但缺少可用安装包
 sealed interface UpdateCheckResult {
