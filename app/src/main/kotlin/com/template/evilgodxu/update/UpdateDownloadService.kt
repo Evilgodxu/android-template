@@ -7,11 +7,13 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import com.template.evilgodxu.App
+import com.template.evilgodxu.data.settings.AppLanguage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 // 前台下载服务：应用退到后台仍继续下载，并在通知栏展示进度；
@@ -31,13 +33,6 @@ class UpdateDownloadService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        UpdateNotifications.createChannel(this)
-        ServiceCompat.startForeground(
-            this,
-            UpdateNotifications.NOTIFICATION_ID,
-            UpdateNotifications.progress(this, 0),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-        )
         downloadJob?.cancel()
         downloadJob = serviceScope.launch { runDownload(info) }
         return START_NOT_STICKY
@@ -49,25 +44,43 @@ class UpdateDownloadService : Service() {
     }
 
     private suspend fun runDownload(info: UpdateInfo) {
+        // 通知文案跟随应用内语言：Service 自身上下文只有系统语言，需另建本地化上下文后再取资源
+        val notificationContext = notificationContext()
+        UpdateNotifications.createChannel(notificationContext)
+        ServiceCompat.startForeground(
+            this,
+            UpdateNotifications.NOTIFICATION_ID,
+            UpdateNotifications.progress(notificationContext, 0),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+        )
         try {
             val targetFile = container.updateDownloadCoordinator.downloadFile(info.version)
             UpdateDownloader.download(info, targetFile) { percent ->
-                UpdateNotifications.post(this, UpdateNotifications.progress(this, percent))
+                UpdateNotifications.post(this, UpdateNotifications.progress(notificationContext, percent))
             }
             container.updateDownloadCoordinator.onCompleted(targetFile)
             UpdateNotifications.post(
                 this,
-                UpdateNotifications.completed(this, container.apkInstaller.installIntent(targetFile)),
+                UpdateNotifications.completed(notificationContext, container.apkInstaller.installIntent(targetFile)),
             )
             // 解除前台状态但保留通知，供应用在后台时点击安装
             stopForeground(STOP_FOREGROUND_DETACH)
         } catch (e: UpdateDownloadException) {
             container.updateDownloadCoordinator.onFailed(e.failure)
-            UpdateNotifications.post(this, UpdateNotifications.failed(this))
+            UpdateNotifications.post(this, UpdateNotifications.failed(notificationContext))
             stopForeground(STOP_FOREGROUND_DETACH)
         } finally {
             stopSelf()
         }
+    }
+
+    // 按应用内语言构造本地化上下文；读取失败时回落到跟随系统
+    private suspend fun notificationContext(): Context {
+        val currentContainer = container
+        val language = runCatching { currentContainer.settingsRepository.appLanguage.first() }
+            .getOrNull() ?: AppLanguage.SYSTEM
+        val manager = currentContainer.localizationManager
+        return manager.createLocalizedContext(manager.localeFor(language))
     }
 
     companion object {

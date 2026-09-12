@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.template.evilgodxu.LocalMainViewModel
 import com.template.evilgodxu.data.settings.AppLanguage
@@ -61,8 +62,12 @@ fun ProvideLocalizedContext(
     val resultRegistryOwner = checkNotNull(activity as? ActivityResultRegistryOwner) {
         "宿主 Activity 必须实现 ActivityResultRegistryOwner"
     }
+    // LocalResources 默认由 LocalContext 推导；对话框挂在独立窗口上，其组合根会用自己的宿主 Context
+    // 重置 LocalContext，弹窗内 stringResource 便退回宿主 Resources（系统语言）而不跟随应用内语言。
+    // 显式提供 LocalResources 的优先级高于推导默认值，可保证弹窗文案与应用内语言一致
     CompositionLocalProvider(
         LocalContext provides localizedContext,
+        LocalResources provides localizedContext.resources,
         LocalActivity provides activity,
         LocalActivityResultRegistryOwner provides resultRegistryOwner,
     ) {
