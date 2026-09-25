@@ -1,4 +1,4 @@
-package com.template.evilgodxu.ui.component.dialog
+package com.template.evilgodxu.screens.settings.component.dialog
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** 单选列表弹窗：居中标题 + 可点选选项列表，选中项高亮；供"从若干项中选一"场景复用 */
+/** 设置页专属：单选列表弹窗，居中标题 + 可点选选项列表，选中项高亮 */
 @Composable
 fun <T> SingleChoiceDialog(
     title: String,

@@ -3,6 +3,7 @@ package com.template.evilgodxu.screens.home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.template.evilgodxu.screens.home.compact.HomeCompactAssembly
 import com.template.evilgodxu.screens.home.expanded.HomeExpandedAssembly
 import com.template.evilgodxu.update.LocalAppUpdateViewModel
@@ -15,6 +16,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onOpenSettings: () -> Unit,
 ) {
+    // 页面级 ViewModel：作用域跟随导航条目，随页面出栈回收
+    viewModel<HomeViewModel>()
     DailyUpdateCheckEffect()
     when (rememberWindowSizeClass()) {
         WindowSizeClass.Compact -> HomeCompactAssembly(modifier, onOpenSettings)

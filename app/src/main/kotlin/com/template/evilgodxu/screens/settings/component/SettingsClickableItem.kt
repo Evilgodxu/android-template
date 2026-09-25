@@ -1,4 +1,4 @@
-package com.template.evilgodxu.ui.component
+package com.template.evilgodxu.screens.settings.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -30,7 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// 设置项：可点击列表项。无需坐标时走 clickable（完整语义/焦点/键盘）；
+// 设置页专属：可点击列表项。无需坐标时走 clickable（完整语义/焦点/键盘）；
 // 需要返回点击坐标时经 detectTapGestures 同步触发以保证位置准确，
 // 并补充按钮语义与焦点以支持无障碍与方向键导航
 @Composable
