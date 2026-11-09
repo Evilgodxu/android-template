@@ -13,3 +13,7 @@ jh.keystore
 .superpowers
 Material Symbols
 示例
+
+# Python 生成物（tools/ 下的脚本工具）
+__pycache__/
+*.py[cod]
