@@ -3,29 +3,27 @@ package com.template.evilgodxu.screens.home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.template.evilgodxu.screens.home.compact.HomeCompactAssembly
-import com.template.evilgodxu.screens.home.expanded.HomeExpandedAssembly
+import com.template.evilgodxu.screens.home.compact.CompactAssembly
+import com.template.evilgodxu.screens.home.expanded.ExpandedAssembly
 import com.template.evilgodxu.update.LocalAppUpdateViewModel
 import com.template.evilgodxu.windowsize.WindowSizeClass
 import com.template.evilgodxu.windowsize.rememberWindowSizeClass
 
-// 页面入口：触发每日更新检查，按窗口尺寸类分发形态，不含布局
+// 页面入口：承载跨形态副作用，按窗口尺寸类分派形态，不含布局
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier,
     onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    // 页面级 ViewModel：作用域跟随导航条目，随页面出栈回收
-    viewModel<HomeViewModel>()
     DailyUpdateCheckEffect()
     when (rememberWindowSizeClass()) {
-        WindowSizeClass.Compact -> HomeCompactAssembly(modifier, onOpenSettings)
-        WindowSizeClass.Medium, WindowSizeClass.Expanded -> HomeExpandedAssembly(modifier, onOpenSettings)
+        WindowSizeClass.Compact -> CompactAssembly(onOpenSettings = onOpenSettings, modifier = modifier)
+        WindowSizeClass.Medium, WindowSizeClass.Expanded ->
+            ExpandedAssembly(onOpenSettings = onOpenSettings, modifier = modifier)
     }
 }
 
-// 进入首页触发每日首次自动检查；发现新版本交由应用级更新对话框呈现，自动检查本身静默
+// 每日检查的应用级动作，故不进页面 ViewModel，避免仅做转发的中间层
 @Composable
 private fun DailyUpdateCheckEffect() {
     val updateViewModel = LocalAppUpdateViewModel.current

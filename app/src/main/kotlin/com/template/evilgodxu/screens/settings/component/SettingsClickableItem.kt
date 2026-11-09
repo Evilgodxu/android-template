@@ -1,8 +1,8 @@
 package com.template.evilgodxu.screens.settings.component
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,51 +21,50 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// 设置页专属：可点击列表项。无需坐标时走 clickable（完整语义/焦点/键盘）；
-// 需要返回点击坐标时经 detectTapGestures 同步触发以保证位置准确，
-// 并补充按钮语义与焦点以支持无障碍与方向键导航
+// 设置项：点击位置用于主题切换的圆形扩散起点。
+// 位置在 Initial 阶段旁路记录，点击仍交给 clickable，涟漪、焦点与无障碍语义保持原生行为
 @Composable
 fun SettingsClickableItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit,
-    onClickWithPosition: ((Offset) -> Unit)? = null,
+    onClick: (Offset) -> Unit,
 ) {
-    var currentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var downPosition by remember { mutableStateOf<Offset?>(null) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .onGloballyPositioned { currentCoordinates = it }
-            .then(
-                if (onClickWithPosition == null) {
-                    Modifier.clickable(onClick = onClick)
-                } else {
-                    Modifier
-                        .pointerInput(onClickWithPosition) {
-                            detectTapGestures { offset ->
-                                onClickWithPosition(
-                                    currentCoordinates?.localToRoot(offset) ?: offset,
-                                )
-                            }
-                        }
-                        .semantics { role = Role.Button }
-                        .focusable()
-                },
-            )
+            .onGloballyPositioned { coordinates = it }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    downPosition = awaitFirstDown(
+                        requireUnconsumed = false,
+                        pass = PointerEventPass.Initial,
+                    ).position
+                }
+            }
+            .clickable {
+                val origin = coordinates?.let { current ->
+                    // 非指针触发（键盘 / 无障碍）没有按下坐标，退回组件几何中心
+                    val local = downPosition ?: Offset(current.size.width / 2f, current.size.height / 2f)
+                    current.localToRoot(local)
+                } ?: Offset.Zero
+                downPosition = null
+                onClick(origin)
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)

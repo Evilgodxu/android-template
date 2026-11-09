@@ -20,11 +20,11 @@ import com.template.evilgodxu.screens.home.component.welcome.Welcome
 import com.template.evilgodxu.ui.component.AppTopBar
 import com.template.evilgodxu.ui.icons.AppIcons
 
-// 首页窄屏组装器：全宽单列布局
+// 窄屏形态：全宽单列，内容占满可用宽度
 @Composable
-fun HomeCompactAssembly(
-    modifier: Modifier = Modifier,
+fun CompactAssembly(
     onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,

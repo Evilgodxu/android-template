@@ -4,13 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.AppLanguage
-import com.template.evilgodxu.ui.component.SectionCard
 import com.template.evilgodxu.screens.settings.component.SettingsClickableItem
+import com.template.evilgodxu.ui.component.SectionCard
 import com.template.evilgodxu.ui.icons.AppIcons
 
-// 语言设置项
 @Composable
-fun Language(language: AppLanguage, onLanguageSelected: (AppLanguage) -> Unit, onShowDialog: () -> Unit) {
+fun Language(language: AppLanguage, onShowDialog: () -> Unit) {
     SectionCard(title = stringResource(R.string.settings_section_language)) {
         SettingsClickableItem(
             icon = AppIcons.Language,
@@ -20,7 +19,7 @@ fun Language(language: AppLanguage, onLanguageSelected: (AppLanguage) -> Unit, o
                 AppLanguage.CHINESE -> stringResource(R.string.language_chinese)
                 AppLanguage.ENGLISH -> stringResource(R.string.language_english)
             },
-            onClick = onShowDialog,
+            onClick = { onShowDialog() },
         )
     }
 }

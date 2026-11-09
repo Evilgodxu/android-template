@@ -5,11 +5,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import com.template.evilgodxu.R
 import com.template.evilgodxu.data.settings.ThemeMode
-import com.template.evilgodxu.ui.component.SectionCard
 import com.template.evilgodxu.screens.settings.component.SettingsClickableItem
+import com.template.evilgodxu.ui.component.SectionCard
 import com.template.evilgodxu.ui.icons.AppIcons
 
-// 外观设置项
 @Composable
 fun Appearance(themeMode: ThemeMode, onThemeClick: (Offset) -> Unit) {
     SectionCard(title = stringResource(R.string.settings_section_appearance)) {
@@ -21,10 +20,7 @@ fun Appearance(themeMode: ThemeMode, onThemeClick: (Offset) -> Unit) {
                 ThemeMode.DARK -> stringResource(R.string.theme_dark)
                 ThemeMode.LIGHT -> stringResource(R.string.theme_light)
             },
-            onClick = {},
-            onClickWithPosition = { position ->
-                onThemeClick(position)
-            },
+            onClick = onThemeClick,
         )
     }
 }

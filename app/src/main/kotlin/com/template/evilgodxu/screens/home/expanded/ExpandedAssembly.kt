@@ -24,11 +24,11 @@ import com.template.evilgodxu.screens.home.component.welcome.Welcome
 import com.template.evilgodxu.ui.component.AppTopBar
 import com.template.evilgodxu.ui.icons.AppIcons
 
-// 首页宽屏组装器：内容限宽居中，避免宽屏下过度拉伸
+// 宽屏形态：内容限宽居中，避免行宽随窗口无限拉伸
 @Composable
-fun HomeExpandedAssembly(
-    modifier: Modifier = Modifier,
+fun ExpandedAssembly(
     onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,

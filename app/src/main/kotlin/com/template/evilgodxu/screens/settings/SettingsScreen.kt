@@ -1,22 +1,29 @@
 package com.template.evilgodxu.screens.settings
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.template.evilgodxu.LocalMainViewModel
-import com.template.evilgodxu.data.settings.AppLanguage
-import com.template.evilgodxu.data.settings.ThemeMode
-import com.template.evilgodxu.screens.settings.compact.SettingsCompactAssembly
-import com.template.evilgodxu.screens.settings.expanded.SettingsExpandedAssembly
+import com.template.evilgodxu.R
+import com.template.evilgodxu.screens.settings.compact.CompactAssembly
+import com.template.evilgodxu.screens.settings.component.dialog.LanguageSelectionDialog
+import com.template.evilgodxu.screens.settings.component.dialog.ThemeSelectionDialog
+import com.template.evilgodxu.screens.settings.expanded.ExpandedAssembly
 import com.template.evilgodxu.theme.LocalThemeTransitionController
 import com.template.evilgodxu.update.LocalAppUpdateViewModel
+import com.template.evilgodxu.update.UpdateMessage
 import com.template.evilgodxu.windowsize.WindowSizeClass
 import com.template.evilgodxu.windowsize.rememberWindowSizeClass
+import kotlinx.coroutines.flow.Flow
 
-// 页面入口：装配状态、按窗口尺寸类分发形态与跨形态副作用，不含布局
+// 页面入口：提升状态与事件，承载跨形态副作用与页面级弹层，按窗口尺寸类分派形态
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -24,52 +31,75 @@ fun SettingsScreen(
 ) {
     val activityViewModel = LocalMainViewModel.current
     val updateViewModel = LocalAppUpdateViewModel.current
-    // 页面级 ViewModel：作用域跟随导航条目，随页面出栈回收
+    // 作用域跟随导航条目，页面出栈即回收
     val settingsViewModel: SettingsViewModel = viewModel()
     val appUiState by activityViewModel.uiState.collectAsStateWithLifecycle()
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val onThemeReveal: (Offset) -> Unit = LocalThemeTransitionController.current::revealAt
 
-    // 选中主题：先从点击位置播放圆形揭示动效，再写入主题并关闭弹窗
-    val onThemeSelected: (ThemeMode) -> Unit = { mode ->
-        onThemeReveal(settingsUiState.pendingThemeClickPosition)
-        activityViewModel.setThemeMode(mode)
-        settingsViewModel.dismissThemeDialog()
-    }
-    // 选中语言：写入语言并关闭弹窗
-    val onLanguageSelected: (AppLanguage) -> Unit = { language ->
-        settingsViewModel.dismissLanguageDialog()
-        activityViewModel.setLanguage(language)
-    }
+    CheckUpdateMessagesEffect(updateViewModel.messages)
 
     when (rememberWindowSizeClass()) {
-        WindowSizeClass.Compact -> SettingsCompactAssembly(
+        WindowSizeClass.Compact -> CompactAssembly(
             uiState = appUiState,
-            settingsUiState = settingsUiState,
-            updateMessages = updateViewModel.messages,
             onBack = onBack,
             onShowThemeDialog = settingsViewModel::showThemeDialog,
-            onDismissThemeDialog = settingsViewModel::dismissThemeDialog,
-            onThemeSelected = onThemeSelected,
             onShowLanguageDialog = settingsViewModel::showLanguageDialog,
-            onDismissLanguageDialog = settingsViewModel::dismissLanguageDialog,
-            onLanguageSelected = onLanguageSelected,
             onCheckForUpdate = updateViewModel::checkNow,
             modifier = modifier,
         )
-        WindowSizeClass.Medium, WindowSizeClass.Expanded -> SettingsExpandedAssembly(
+        WindowSizeClass.Medium, WindowSizeClass.Expanded -> ExpandedAssembly(
             uiState = appUiState,
-            settingsUiState = settingsUiState,
-            updateMessages = updateViewModel.messages,
             onBack = onBack,
             onShowThemeDialog = settingsViewModel::showThemeDialog,
-            onDismissThemeDialog = settingsViewModel::dismissThemeDialog,
-            onThemeSelected = onThemeSelected,
             onShowLanguageDialog = settingsViewModel::showLanguageDialog,
-            onDismissLanguageDialog = settingsViewModel::dismissLanguageDialog,
-            onLanguageSelected = onLanguageSelected,
             onCheckForUpdate = updateViewModel::checkNow,
             modifier = modifier,
         )
+    }
+
+    // 弹层与形态无关，统一挂在骨架层，新增形态时不会重复实现
+    if (settingsUiState.showThemeDialog) {
+        ThemeSelectionDialog(
+            currentTheme = appUiState.themeMode,
+            onDismiss = settingsViewModel::dismissThemeDialog,
+            // 先从点击位置播放圆形揭示，再落库主题：揭示动画需要旧主题画面作为底图
+            onThemeSelected = { mode ->
+                onThemeReveal(settingsUiState.pendingThemeClickPosition)
+                activityViewModel.setThemeMode(mode)
+                settingsViewModel.dismissThemeDialog()
+            },
+        )
+    }
+
+    if (settingsUiState.showLanguageDialog) {
+        LanguageSelectionDialog(
+            currentLanguage = appUiState.language,
+            onDismiss = settingsViewModel::dismissLanguageDialog,
+            // 先关闭弹窗再切换语言：语言变化会就地重建弹窗内文案，视觉上会看到一次闪跳
+            onLanguageSelected = { language ->
+                settingsViewModel.dismissLanguageDialog()
+                activityViewModel.setLanguage(language)
+            },
+        )
+    }
+}
+
+// 手动检查的一次性结果；以文案为键重建收集，避免语言切换后仍提示旧语言文案
+@Composable
+private fun CheckUpdateMessagesEffect(messages: Flow<UpdateMessage>) {
+    val context = LocalContext.current
+    val upToDateText = stringResource(R.string.settings_update_latest)
+    val checkFailedText = stringResource(R.string.settings_update_failed)
+    val incompleteReleaseText = stringResource(R.string.settings_update_incomplete)
+    LaunchedEffect(upToDateText, checkFailedText, incompleteReleaseText) {
+        messages.collect { message ->
+            val text = when (message) {
+                UpdateMessage.UpToDate -> upToDateText
+                UpdateMessage.CheckFailed -> checkFailedText
+                UpdateMessage.IncompleteRelease -> incompleteReleaseText
+            }
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        }
     }
 }
