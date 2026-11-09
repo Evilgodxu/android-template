@@ -23,7 +23,7 @@
 
 - **Single-Activity architecture** with Jetpack Compose + Material 3, edge-to-edge rendering, and per-orientation system-bar visibility
 - **MVVM with unidirectional data flow (UDF)** — app-wide state (theme / language / version) is aggregated in an Activity-scoped `MainViewModel` and consumed across the tree via a `CompositionLocal`; each screen adds its own immutable `UiState` exposed as a `StateFlow`. Events flow up, state flows down
-- **Atomic UI decomposition + adaptive assemblies** — the screen entry dispatches by window size class to a `CompactAssembly` / `ExpandedAssembly`, which composes self-contained, single-responsibility components from `component/`; components depend strictly downward and never couple back to the assembly
+- **Atomic UI decomposition + responsive layout** — the window size class is computed once in the screen entry and passed down as a parameter; form differences are expressed as layout flags (a content max-width on wide windows) instead of a second UI tree, so every form shares one state and one set of components
 - **Navigation3** with typed routes and an explicit back stack (double-back-to-exit on the root)
 - **Manual DI** — the `Application` owns a single `AppContainer`; the Activity and ViewModels pull dependencies from it
 - **JVM unit tests** — version comparison, persisted-value parsing and both ViewModels, using in-memory fakes instead of a mocking framework
@@ -69,20 +69,18 @@
 │   │   │   ├── navigation/              # Navigation3 typed routes + NavHost
 │   │   │   ├── screens/                 # Feature modules
 │   │   │   │   ├── home/                #   Home (Screen + UiState + ViewModel)
-│   │   │   │   │   ├── compact/         #     Narrow-window assembly
-│   │   │   │   │   ├── expanded/        #     Wide-window assembly
+│   │   │   │   │   ├── assembly/        #     Screen assembler (Scaffold + content pane)
 │   │   │   │   │   └── component/       #     Home-only components (welcome/ about/)
 │   │   │   │   └── settings/            #   Settings (Screen + UiState + ViewModel)
-│   │   │   │       ├── compact/         #     Narrow-window assembly
-│   │   │   │       ├── expanded/        #     Wide-window assembly
-│   │   │   │       └── component/       #     Settings-only components (appearance/ language/ info/ content/ dialog/)
+│   │   │   │       ├── assembly/        #     Screen assembler (Scaffold + content pane)
+│   │   │   │       └── component/       #     Settings-only components (appearance/ language/ info/ dialog/)
 │   │   │   ├── theme/                   # Material 3 color scheme & typography
 │   │   │   ├── localization/            # In-app localization (LocalizationManager)
 │   │   │   ├── permission/              # Permission state manager (runtime + special access)
 │   │   │   ├── windowsize/              # Window size classes
 │   │   │   ├── ui/                      # Cross-screen shared UI
-│   │   │   │   ├── component/           #   Shared components (SectionCard/AppTopBar/SettingsClickableItem)
-│   │   │   │   │   └── dialog/          #     SingleChoiceDialog + UpdateDialog
+│   │   │   │   ├── component/           #   Shared components (SectionCard/AppTopBar/ContentPane)
+│   │   │   │   │   └── dialog/          #     UpdateDialog
 │   │   │   │   └── icons/               #   Vector icons
 │   │   │   ├── update/                  # Update check / download / install (GitHub API + foreground service)
 │   │   │   ├── App.kt                   # Application entry
@@ -120,9 +118,9 @@ The typical flow: `DataStore → Repository → ViewModel → UiState → UI` fo
 
 Code is organized with a **modular pattern driven by window size classes**, mirroring Material's adaptive guidance:
 
-- `{ScreenName}Screen.kt` — a thin screen entry that hoists state and events, dispatches to an assembly by window size class, and hosts cross-form effects and page-level overlays. It contains **no layout code**.
-- `compact/CompactAssembly.kt` / `expanded/ExpandedAssembly.kt` — the package already scopes the screen, so file and function names drop the screen prefix. Each owns screen-level layout scaffolding (Scaffold, top bar, scroll container) and **assembles reusable atomic components**. The displayed form is decided jointly by window size class and screen rotation state; `if`-based layout branching is avoided.
-- `ui/component/` — cross-screen shared components (`SectionCard`, `AppTopBar`, `SettingsClickableItem`, plus `SingleChoiceDialog` under `component/dialog/`), named by semantics. Components used by only one screen live under that screen's own `component/` subdirectory. Dependencies point strictly downward: an assembly may compose components, but a component never composes back into an assembly, so the tree stays uncoupled.
+- `{ScreenName}Screen.kt` — a thin screen entry that computes the window size class, hoists state and events, and hosts cross-form effects and page-level overlays. It contains **no layout code**.
+- `{ScreenName}Assembly.kt` — owns screen-level scaffolding (Scaffold, top bar, content pane) and **assembles page components**. Form differences are a layout flag such as `ContentPane`'s max content width, not a second UI tree. Split into `compact/` and `expanded/` assemblies only when the two forms genuinely compose different blocks — and then both must consume the same `UiState` and the same event callbacks.
+- `ui/component/` — cross-screen shared components (`SectionCard`, `AppTopBar`, `ContentPane`, plus `UpdateDialog` under `component/dialog/`), named by semantics. Components used by only one screen live under that screen's own `component/` subdirectory (e.g. `SettingsClickableItem`, `SingleChoiceDialog`). Dependencies point strictly downward: an assembly may compose components, but a component never composes back into an assembly, so the tree stays uncoupled.
 
 DI is manual: `App` builds a fully-populated `AppContainer` (DataStore, repository, localization manager, version) at startup, and the Activity / ViewModels pull dependencies from it (ViewModels get constructor args via a `viewModelFactory`). Page-level ViewModels are obtained with `viewModel()`, scoped to their navigation entry through the Navigation3 `rememberViewModelStoreNavEntryDecorator()`. No framework or reflection.
 
@@ -134,7 +132,7 @@ Engineering conventions — build verification, unit-test expectations, comment 
 
 ### Prerequisites
 
-- JDK 21
+- JDK 25
 - Android Studio (latest stable recommended)
 - Android SDK with API 37 (`compileSdk`)
 
@@ -174,7 +172,7 @@ The keystore file is expected at `jh.keystore` in the project root (adjust `stor
 - **App name**: edit `app_name` in `app/src/main/res/values/strings.xml`.
 - **Theme colors**: edit `app/src/main/kotlin/.../theme/Color.kt`.
 - **Supported ABIs**: adjust `ndk.abiFilters` in `app/build.gradle.kts` (currently `arm64-v8a`).
-- **Add a new screen**: create a `screens/<name>/` feature module with its `UiState` + `ViewModel` + `compact/CompactAssembly.kt` and `expanded/ExpandedAssembly.kt`, put single-screen components under its own `component/` (cross-screen ones go to `ui/component/`), register the route in `navigation/Screen.kt`, and add it to `AppNavHost`.
+- **Add a new screen**: create a `screens/<name>/` feature module with its `UiState` + `ViewModel` + `assembly/<Name>Assembly.kt`, put single-screen components under its own `component/` (cross-screen ones go to `ui/component/`), register the route in `navigation/Screen.kt`, and add it to `AppNavHost`.
 
 ## License
 

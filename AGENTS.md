@@ -3,7 +3,8 @@
 - 单 Activity + Jetpack Compose（Material 3）+ Navigation3，状态管理为 MVVM + 单向数据流。
 - 依赖版本统一写在 `gradle/libs.versions.toml`，用 `./gradlew refreshVersions` 巡检；不手写单个依赖版本。
 - 只接受正式版：`settings.gradle.kts` 的 `rejectVersionIf` 已滤除带连字符的预发布标签，升级时不要绕过该过滤。
-- 引入新依赖前先确认标准库、Compose 与 AndroidX 原生能力无法覆盖；轻量库优先按源码等价实现。
+- 取舍顺序：语言标准库 → Compose / AndroidX 原生能力 → 按源码等价自实现 → 引入依赖。
+- 调用链路取最短：不设只做转发的中间层；拆分以抑制碎片化为界，聚合以上帝类为界。
 
 ## 架构与状态
 
@@ -130,22 +131,21 @@ UI → ViewModel → Repository → DataStore                事件自下而上
 - 骨架白名单：`XxxScreen.kt`、`XxxUiState.kt`、`XxxViewModel.kt`。
 - 其余文件进入 `component/`、`compact/`、`expanded/` 等子目录，或按业务语义新建子目录。
 
-## 布局组装
+## 布局与自适应
 
-- 布局由组装器组装页面 `component/` 或 `ui/component/` 下的组件得出，不在同一文件内硬编码多种布局。
-- 不同形态各由对应组装器承担，共用组件经由组装器参数注入，组装器本身不承载业务逻辑。
+- 屏幕必须同时适配窄窗与宽窗。窗口尺寸类在 `{Screen}Screen` 单一位置计算，作为参数显式下传给组装器；组件只按收到的布局标志位渲染，不自行读取窗口尺寸。
+- 形态差异优先用「布局标志位 + 宽度上限」表达（`ContentPane` 的行宽上限即此类）。同一份内容不维护两套组装器。
+- 只有当两种形态的功能区块结构确实不同（区块增减、导航形态改变）时，才拆 `compact/` 与 `expanded/` 两套组装器；二者必须消费同一份 `UiState` 与同一套事件回调，禁止各自定义状态或事件。
+- 布局由组装器组装页面 `component/` 或 `ui/component/` 下的组件得出，不在同一文件内硬编码多种布局；共用组件经组装器参数注入。
+- 拆分判据是「单一问题」：可独立交互 / 预览 / 测试的功能区块才拆成组件；单行 `Text`、`Spacer` 这类微结构内联；只服务当前屏幕的私有组装留在同文件的 `private` Composable 中。
 - 页面级弹层与跨形态副作用挂在 `{Screen}Screen` 骨架层，不随形态重复实现。
 
 ## 页面模块目录示例
 
 ```text
 screens/home/
-├── compact/                       # 竖屏组装(必须)
-│   ├── CompactAssembly.kt         # 竖屏组装器
-│   └── …/                         # 专属组件(按需)
-│       └── ….kt
-├── expanded/                      # 横屏组装(按需)
-│   └── ExpandedAssembly.kt        # 横屏组装器
+├── assembly/                      # 组装器(必须)
+│   └── HomeAssembly.kt            #   结构差异大时改为 compact/ + expanded/ 两套
 ├── component/                     # 页面组件(必须)
 │   ├── …/
 │   │   └── ….kt
@@ -154,6 +154,8 @@ screens/home/
 ├── HomeUiState.kt                 # 骨架(必须)
 └── HomeViewModel.kt               # 骨架(必须)
 ```
+
+`{Screen}Screen` 只做 ViewModel 连接、尺寸类计算与副作用；至少有一个无状态 Composable 接收 `UiState` 与事件回调，脱离 ViewModel 即可预览。
 
 ## 未明确决策
 

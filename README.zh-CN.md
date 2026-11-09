@@ -23,7 +23,7 @@
 
 - **单 Activity 架构**：基于 Jetpack Compose + Material 3，支持边到边（edge-to-edge）渲染，并按屏幕方向显隐系统栏
 - **MVVM + 单向数据流（UDF）**：应用级状态（主题 / 语言 / 版本）由 Activity 作用域的 `MainViewModel` 聚合，经 `CompositionLocal` 供界面树消费；各页面另以不可变 `UiState` 经 `StateFlow` 暴露。事件自下而上、状态自上而下
-- **原子化 UI 拆分 + 自适应组装器**：页面入口按窗口尺寸类分派到 `CompactAssembly` / `ExpandedAssembly`，由组装器组合 `component/` 下语义单一、自包含的组件；组件仅向下依赖、绝不反向耦合到组装器
+- **原子化 UI 拆分 + 响应式布局**：窗口尺寸类在页面入口计算一次并作为参数下传；形态差异用布局标志位（宽窗下的内容行宽上限）表达，而不是第二套 UI 树，因此各形态共用同一份状态与同一套组件
 - **Navigation3 导航**：类型安全路由 + 显式返回栈（根页面支持双击返回退出）
 - **手动依赖注入**：`Application` 持有一站式 `AppContainer`，Activity 与 ViewModel 从容器取依赖
 - **单元测试**：版本比较、持久化值解析与两个 ViewModel，用内存 fake 替代 mock 框架
@@ -69,20 +69,18 @@
 │   │   │   ├── navigation/              # Navigation3 类型安全路由 + 导航宿主
 │   │   │   ├── screens/                 # 页面模块
 │   │   │   │   ├── home/                #   首页（Screen + UiState + ViewModel）
-│   │   │   │   │   ├── compact/         #     窄屏组装器
-│   │   │   │   │   ├── expanded/        #     宽屏组装器
+│   │   │   │   │   ├── assembly/        #     组装器（Scaffold + 内容区）
 │   │   │   │   │   └── component/       #     首页专用组件（welcome/ about/）
 │   │   │   │   └── settings/            #   设置页（Screen + UiState + ViewModel）
-│   │   │   │       ├── compact/         #     窄屏组装器
-│   │   │   │       ├── expanded/        #     宽屏组装器
-│   │   │   │       └── component/       #     设置页专用组件（appearance/ language/ info/ content/ dialog/）
+│   │   │   │       ├── assembly/        #     组装器（Scaffold + 内容区）
+│   │   │   │       └── component/       #     设置页专用组件（appearance/ language/ info/ dialog/）
 │   │   │   ├── theme/                   # Material 3 配色与字体
 │   │   │   ├── localization/            # 应用内多语言管理（LocalizationManager）
 │   │   │   ├── permission/              # 权限状态管理器（运行时权限与特殊权限统一出口）
 │   │   │   ├── windowsize/              # 窗口尺寸类
 │   │   │   ├── ui/                      # 跨页面复用 UI
-│   │   │   │   ├── component/           #   共享组件（SectionCard/AppTopBar/SettingsClickableItem）
-│   │   │   │   │   └── dialog/          #     SingleChoiceDialog + UpdateDialog
+│   │   │   │   ├── component/           #   共享组件（SectionCard/AppTopBar/ContentPane）
+│   │   │   │   │   └── dialog/          #     UpdateDialog
 │   │   │   │   └── icons/               #   矢量图标
 │   │   │   ├── update/                  # 版本检查 / 下载 / 安装（GitHub API + 前台服务）
 │   │   │   ├── App.kt                   # Application 入口
@@ -120,9 +118,9 @@
 
 代码遵循 **按窗口尺寸类拆分的模块化模式**（对齐 Material 自适应指南）：
 
-- `{ScreenName}Screen.kt` —— 轻量页面入口：提升（hoist）状态与事件、按窗口尺寸类分派到组装器，并承载跨形态副作用与页面级弹层，**不含布局代码**。
-- `compact/CompactAssembly.kt` / `expanded/ExpandedAssembly.kt` —— 包名已限定所属页面，文件名与函数名不再重复页面前缀；负责页面级布局骨架（Scaffold、顶栏、滚动容器），并**组装可复用的原子组件**。显示形态由窗口尺寸类与屏幕旋转状态共同决定，避免 `if` 式布局分支。
-- `ui/component/` —— 跨页面共享组件（`SectionCard`、`AppTopBar`、`SettingsClickableItem`，以及 `component/dialog/` 下的 `SingleChoiceDialog`），按语义命名；仅单页使用的组件下沉到该页面自己的 `component/` 子目录。依赖严格向下：组装器可组合组件，组件绝不反向组合进组装器，组件树因此保持解耦。
+- `{ScreenName}Screen.kt` —— 轻量页面入口：计算窗口尺寸类、提升（hoist）状态与事件，承载跨形态副作用与页面级弹层，**不含布局代码**。
+- `{ScreenName}Assembly.kt` —— 负责页面级布局骨架（Scaffold、顶栏、内容区）并**组装页面组件**。形态差异是布局标志位（如 `ContentPane` 的行宽上限），而不是第二套 UI 树。只有当两种形态的功能区块结构确实不同时，才拆成 `compact/` 与 `expanded/` 两套组装器，且二者必须消费同一份 `UiState` 与同一套事件回调。
+- `ui/component/` —— 跨页面共享组件（`SectionCard`、`AppTopBar`、`ContentPane`，以及 `component/dialog/` 下的 `UpdateDialog`），按语义命名；仅单页使用的组件下沉到该页面自己的 `component/` 子目录（如 `SettingsClickableItem`、`SingleChoiceDialog`）。依赖严格向下：组装器可组合组件，组件绝不反向组合进组装器，组件树因此保持解耦。
 
 依赖注入采用手动 DI：`App` 在启动时构造成员齐全的 `AppContainer`（DataStore、仓库、语言管理器、版本号），`MainActivity` 与 ViewModel 自容器取依赖（ViewModel 经 `viewModelFactory` 注入构造参数）；页面级 ViewModel 经 `viewModel()` 获取，作用域由 Navigation3 的 `rememberViewModelStoreNavEntryDecorator()` 绑定到导航条目，无框架反射。
 
@@ -134,7 +132,7 @@
 
 ### 环境要求
 
-- JDK 21
+- JDK 25
 - Android Studio（建议最新稳定版）
 - 包含 API 37（`compileSdk`）的 Android SDK
 
@@ -174,7 +172,7 @@ KEY_PASSWORD=你的别名密码
 - **应用显示名**：修改 `app/src/main/res/values/strings.xml` 中的 `app_name`
 - **主题配色**：修改 `app/src/main/kotlin/.../theme/Color.kt`
 - **支持的 ABI**：调整 `app/build.gradle.kts` 中的 `ndk.abiFilters`（当前仅 `arm64-v8a`）
-- **新增页面**：在 `screens/<name>/` 下创建页面模块（`UiState` + `ViewModel` + `compact/CompactAssembly.kt` 与 `expanded/ExpandedAssembly.kt`），仅单页使用的组件放该页面自己的 `component/`（跨页面复用的上提到 `ui/component/`），在 `navigation/Screen.kt` 注册路由，并加入 `AppNavHost`
+- **新增页面**：在 `screens/<name>/` 下创建页面模块（`UiState` + `ViewModel` + `assembly/<Name>Assembly.kt`），仅单页使用的组件放该页面自己的 `component/`（跨页面复用的上提到 `ui/component/`），在 `navigation/Screen.kt` 注册路由，并加入 `AppNavHost`
 
 ## License
 
