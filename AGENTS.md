@@ -2,9 +2,11 @@
 
 - 单 Activity + Jetpack Compose（Material 3）+ Navigation3，状态管理为 MVVM + 单向数据流。
 - 依赖版本统一写在 `gradle/libs.versions.toml`，用 `./gradlew refreshVersions` 巡检；不手写单个依赖版本。
+- 巡检插件从本机仓库（`~/.m2`）消费，`settings.gradle.kts` 里的版本号须与 `../refreshVersions/plugins/version.txt` 一致；改动该源码分支后先在其 `plugins/` 目录执行 `./gradlew publishToMavenLocal`，再巡检。
 - 只接受正式版：`settings.gradle.kts` 的 `rejectVersionIf` 已滤除带连字符的预发布标签，升级时不要绕过该过滤。
 - 取舍顺序：语言标准库 → Compose / AndroidX 原生能力 → 按源码等价自实现 → 引入依赖。
 - 调用链路取最短：不设只做转发的中间层；拆分以抑制碎片化为界，聚合以上帝类为界。
+- Release 优化统一走 AGP 9.3+ 的 `optimization { enable = true }`：它同时开启代码优化、优化型资源缩减并内置等价于 `proguard-android-optimize.txt` 的默认规则，不要再写回 `isMinifyEnabled` / `isShrinkResources` / `getDefaultProguardFile`。
 
 ## 架构与状态
 
