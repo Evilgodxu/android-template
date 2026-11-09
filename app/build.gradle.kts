@@ -44,6 +44,8 @@ android {
     androidResources {
         // 禁用按语言分包，支持应用内语言切换
         localeFilters += listOf("zh", "en")
+        // 由 AGP 依据资源目录生成 locale_config 并写入清单，避免手写文件与资源漂移
+        generateLocaleConfig = true
     }
 
     // 语言资源不分包，确保运行时语言切换可用
@@ -55,13 +57,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // AGP 9.3+ 的统一优化入口：代码优化、优化型资源缩减与平台默认 keep 规则一并开启，
+            // 默认规则已等价于 proguard-android-optimize.txt，无需再单独声明
+            optimization {
+                enable = true
+            }
             isCrunchPngs = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles("proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
