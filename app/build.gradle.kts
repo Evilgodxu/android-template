@@ -1,5 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
+import com.android.build.api.variant.HasUnitTestBuilder
 
 plugins {
     alias(libs.plugins.android.application)
@@ -19,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "com.template.evilgodxu"
-        minSdk = 33
+        minSdk = 34
         targetSdk = 37
         versionCode = 1
         versionName = "1.0.0"
@@ -69,6 +70,14 @@ android {
     }
 
     packaging {
+        jniLibs {
+            // 不压缩原生库，确保可以 mmap 加载，安装后体积最小
+            useLegacyPackaging = false
+        }
+        dex {
+            // 定向压缩 DEX，减小分发体积
+            useLegacyPackaging = true
+        }
         resources {
             excludes += setOf(
                 // Kotlin 模块元数据文件（每个 Kotlin 库都会生成，必然重复）
@@ -103,6 +112,12 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            // Compose Preview 任务依赖编译后的 Android 资源解析 XML 与主题属性
+            isIncludeAndroidResources = true
+        }
+    }
     lint {
         // 质量门禁：Lint Error 阻断构建，release 变体同规则
         abortOnError = true
@@ -121,6 +136,11 @@ kotlin {
 }
 
 androidComponents {
+    // AGP 9.5 会为开启 compose 的每个变体注册 Compose Preview 任务，变体未启用单元测试时创建即失败，
+    // 使 tasks 与 IDE 同步中断；该开关在 VariantBuilder 上已隐藏，需经 HasUnitTestBuilder 设置
+    beforeVariants(selector().all()) { variant ->
+        (variant as HasUnitTestBuilder).enableUnitTest = true
+    }
     onVariants(selector().all()) { variant ->
         variant.outputs.forEach { output ->
             output.outputFileName.set("Template-$apkVersionName-arm64.apk")
