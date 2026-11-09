@@ -12,18 +12,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.template.evilgodxu.LocalMainViewModel
 import com.template.evilgodxu.R
-import com.template.evilgodxu.screens.settings.compact.CompactAssembly
+import com.template.evilgodxu.screens.settings.assembly.SettingsAssembly
 import com.template.evilgodxu.screens.settings.component.dialog.LanguageSelectionDialog
 import com.template.evilgodxu.screens.settings.component.dialog.ThemeSelectionDialog
-import com.template.evilgodxu.screens.settings.expanded.ExpandedAssembly
 import com.template.evilgodxu.theme.LocalThemeTransitionController
 import com.template.evilgodxu.update.LocalAppUpdateViewModel
 import com.template.evilgodxu.update.UpdateMessage
-import com.template.evilgodxu.windowsize.WindowSizeClass
 import com.template.evilgodxu.windowsize.rememberWindowSizeClass
 import kotlinx.coroutines.flow.Flow
 
-// 页面入口：提升状态与事件，承载跨形态副作用与页面级弹层，按窗口尺寸类分派形态
+// 页面入口：提升状态与事件，承载跨形态副作用与页面级弹层，窗口尺寸类在此计算后作为参数下传
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -39,24 +37,15 @@ fun SettingsScreen(
 
     CheckUpdateMessagesEffect(updateViewModel.messages)
 
-    when (rememberWindowSizeClass()) {
-        WindowSizeClass.Compact -> CompactAssembly(
-            uiState = appUiState,
-            onBack = onBack,
-            onShowThemeDialog = settingsViewModel::showThemeDialog,
-            onShowLanguageDialog = settingsViewModel::showLanguageDialog,
-            onCheckForUpdate = updateViewModel::checkNow,
-            modifier = modifier,
-        )
-        WindowSizeClass.Medium, WindowSizeClass.Expanded -> ExpandedAssembly(
-            uiState = appUiState,
-            onBack = onBack,
-            onShowThemeDialog = settingsViewModel::showThemeDialog,
-            onShowLanguageDialog = settingsViewModel::showLanguageDialog,
-            onCheckForUpdate = updateViewModel::checkNow,
-            modifier = modifier,
-        )
-    }
+    SettingsAssembly(
+        windowSizeClass = rememberWindowSizeClass(),
+        uiState = appUiState,
+        onBack = onBack,
+        onShowThemeDialog = settingsViewModel::showThemeDialog,
+        onShowLanguageDialog = settingsViewModel::showLanguageDialog,
+        onCheckForUpdate = updateViewModel::checkNow,
+        modifier = modifier,
+    )
 
     // 弹层与形态无关，统一挂在骨架层，新增形态时不会重复实现
     if (settingsUiState.showThemeDialog) {

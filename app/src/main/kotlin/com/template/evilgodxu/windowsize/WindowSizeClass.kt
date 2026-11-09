@@ -3,6 +3,7 @@ package com.template.evilgodxu.windowsize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 // 窗口宽度尺寸类：compact <600dp、medium 600-839dp、expanded >=840dp
@@ -25,3 +26,8 @@ fun rememberWindowSizeClass(): WindowSizeClass {
         else -> WindowSizeClass.Compact
     }
 }
+
+// 单栏内容的行宽上限：宽窗收窄以免文本行过长，窄窗不设限。
+// 阈值与形态判断同处一个文件，避免在多个组装器里各写一遍魔数
+val WindowSizeClass.contentMaxWidth: Dp
+    get() = if (this == WindowSizeClass.Compact) Dp.Unspecified else 840.dp
