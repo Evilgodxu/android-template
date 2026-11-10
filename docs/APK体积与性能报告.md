@@ -11,8 +11,7 @@
 
 - **后处理已无空间**：可回收 67 B，产物已按最优形式打包，重写只会更换签名块而不带来收益。
 - **运行性能无法由后处理提升**：R8 在编译期完成代码优化、DEX 布局与 Baseline Profile 生成，改写其产物会导致优化失效甚至性能回退。
-- **构建期缺口 3 项**：
-  - 资源缩减（待确认）：已启用，但未使用 AGP 9 的优化型资源缩减；后者可跨代码与资源边界裁剪
+- **构建期缺口 2 项**：
   - Startup Profile / DEX 布局优化（未启用）：缺少 startup-prof.txt，启动路径的类会散落在 DEX 中并触发额外缺页
   - 签名方案（待确认）：未显式声明 v1/v2/v3 方案，不同构建工具版本的默认值可能变化
 
@@ -27,7 +26,7 @@
 | `kotlin/` | 8 | 52.7 KiB | 12.1 KiB | 1.2% |
 | `assets/` | 2 | 6.2 KiB | 6.2 KiB | 0.6% |
 | `AndroidManifest.xml` | 1 | 7.2 KiB | 2.0 KiB | 0.2% |
-| `META-INF/` | 4 | 182 B | 177 B | 0.0% |
+| `META-INF/` | 4 | 182 B | 179 B | 0.0% |
 
 ## 最大条目
 
@@ -63,8 +62,8 @@
 
 | 项 | 状态 | 说明 | 参考 |
 | --- | --- | --- | --- |
-| R8 代码缩减与优化 | 已启用 | 已通过 isMinifyEnabled = true 启用，R8 会移除未引用代码并重写热点逻辑 | [官方文档](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) |
-| 资源缩减 | 待确认 | 已启用，但未使用 AGP 9 的优化型资源缩减；后者可跨代码与资源边界裁剪 | [官方文档](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) |
+| R8 代码缩减与优化 | 已启用 | 已通过 optimization { enable = true } 启用，R8 会移除未引用代码并重写热点逻辑 | [官方文档](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) |
+| 资源缩减 | 已启用 | 新 DSL 下优化型资源缩减随 optimization{} 默认启用，代码与资源引用会被合并裁剪 | [官方文档](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) |
 | R8 完整模式 | 已启用 | 未显式关闭，R8 使用完整优化集合 | [官方文档](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) |
 | 资源限定符裁剪 | 已启用 | 已声明语言限定符，未支持语言的库资源不会进入包内 | [官方文档](https://developer.android.com/topic/performance/reduce-apk-size) |
 | ABI 维度收敛 | 已启用 | 已限定 ABI，避免多套原生库同时入包 | [官方文档](https://developer.android.com/topic/performance/reduce-apk-size) |
