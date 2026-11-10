@@ -2,7 +2,7 @@
 
 # Template
 
-**一个开箱即用的现代化 Android 应用模板，基于 Jetpack Compose、MVVM 与模块化架构构建。**
+**一个开箱即用的现代化 Android 应用模板，基于 Jetpack Compose、Material 3、MVVM 与 Navigation3 构建。**
 
 [English](README.md) | **简体中文**
 

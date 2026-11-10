@@ -2,7 +2,7 @@
 
 # Template
 
-**A modern, out-of-the-box Android app template built with Jetpack Compose, MVVM and a modular architecture.**
+**A modern, out-of-the-box Android app template built with Jetpack Compose, Material 3, MVVM and Navigation3.**
 
 **English** | [简体中文](README.zh-CN.md)
 
